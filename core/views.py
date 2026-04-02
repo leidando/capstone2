@@ -32,10 +32,10 @@ def admin_required(view_func):
     @wraps(view_func)
     @login_required
     def wrapper(request, *args, **kwargs):
-        if not hasattr(request.user, 'profile') or not request.user.profile.is_admin:
-            messages.error(request, 'Access denied. Admin privileges required.')
-            return redirect('user_dashboard')
-        return view_func(request, *args, **kwargs)
+        if request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_admin):
+            return view_func(request, *args, **kwargs)
+        messages.error(request, 'Access denied. Admin privileges required.')
+        return redirect('home')
     return wrapper
 
 
@@ -60,12 +60,13 @@ def staff_or_admin_required(view_func):
     @wraps(view_func)
     @login_required
     def wrapper(request, *args, **kwargs):
-        if not hasattr(request.user, 'profile'):
-            return redirect('login')
-        if request.user.profile.is_admin or request.user.profile.is_staff_role:
+        if request.user.is_superuser:
             return view_func(request, *args, **kwargs)
+        if hasattr(request.user, 'profile'):
+            if request.user.profile.is_admin or request.user.profile.is_staff_role:
+                return view_func(request, *args, **kwargs)
         messages.error(request, 'Access denied.')
-        return redirect('user_dashboard')
+        return redirect('home')
     return wrapper
 
 
@@ -111,12 +112,7 @@ def login_view(request):
             )
             if user:
                 login(request, user)
-                if hasattr(user, 'profile'):
-                    if user.profile.is_admin:
-                        return redirect('admin_dashboard')
-                    elif user.profile.is_staff_role:
-                        return redirect('staff_dashboard')
-                return redirect('user_dashboard')
+                return redirect('home')
             else:
                 messages.error(request, 'Invalid username or password.')
     else:
