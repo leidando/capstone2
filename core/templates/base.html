@@ -44,7 +44,7 @@
             </div>
 
             <nav class="sidebar-nav">
-                {% if user.is_authenticated and user.profile.is_admin %}
+                {% if user.is_authenticated and user.is_superuser or user.profile.is_admin %}
                 <!-- ═══ Admin Navigation ═══ -->
                 <div class="sidebar-label">Dashboard</div>
                 <a href="{% url 'admin_dashboard' %}"
@@ -90,7 +90,7 @@
 
 
 
-                {% elif user.is_authenticated and user.profile.is_staff_role %}
+                {% elif user.is_authenticated and user.is_staff or user.profile.is_staff_role %}
                 <!-- ═══ Staff Navigation ═══ -->
                 <div class="sidebar-label">Dashboard</div>
                 <a href="{% url 'staff_dashboard' %}"
@@ -141,7 +141,7 @@
                     <div class="sidebar-avatar">{{ user.first_name.0 }}{{ user.last_name.0 }}</div>
                     <div class="sidebar-user-info">
                         <div class="name">{{ user.get_full_name|default:user.username }}</div>
-                        <div class="role">{% if user.profile.is_admin %}Administrator{% elif user.profile.is_staff_role %}Staff{% else %}Citizen{% endif %}</div>
+                        <div class="role">{% if user.is_superuser or user.profile.is_admin %}Administrator{% elif user.is_staff or user.profile.is_staff_role %}Staff{% else %}Citizen{% endif %}</div>
                     </div>
                 </div>
                 <a href="{% url 'logout' %}" class="sidebar-link" style="margin-top: 12px;" id="nav-logout">
@@ -162,7 +162,7 @@
                 <div class="topbar-actions">
                     <span class="topbar-breadcrumb">{% block breadcrumb %}{% endblock %}</span>
 
-                    {% if not user.profile.is_admin and not user.profile.is_staff_role %}
+                    {% if not user.is_superuser and not user.is_staff and not user.profile.is_admin and not user.profile.is_staff_role %}
                     <!-- Google Translate (user side only) -->
                     <div id="google_translate_element"></div>
                     {% endif %}
@@ -216,7 +216,7 @@
     </script>
 
     <!-- Google Translate API (user side) -->
-    {% if not user.profile.is_admin and not user.profile.is_staff_role %}
+    {% if not user.is_superuser and not user.is_staff and not user.profile.is_admin and not user.profile.is_staff_role %}
     <script type="text/javascript">
         function googleTranslateElementInit() {
             new google.translate.TranslateElement({
