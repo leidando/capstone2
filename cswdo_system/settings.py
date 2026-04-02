@@ -1,11 +1,14 @@
 from pathlib import Path
 import os
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-cswdo-capstone-dev-key-change-in-prod'
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+# Security — Use environment variables in production
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-cswdo-capstone-dev-key-change-in-prod')
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if os.environ.get('CSRF_TRUSTED_ORIGINS') else []
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -19,6 +22,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -46,11 +50,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cswdo_system.wsgi.application'
 
+# Database — SQLite locally, PostgreSQL on Render
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600,
+    )
 }
 
 LANGUAGE_CODE = 'en-us'
@@ -58,11 +63,17 @@ TIME_ZONE = 'Asia/Manila'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+# Static files — WhiteNoise serves them in production
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'core' / 'static',
 ]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
