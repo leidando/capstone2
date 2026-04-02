@@ -89,8 +89,7 @@
                             <td style="color: var(--text-muted);">{{ ben.age }}</td>
                             <td style="color: var(--text-muted);">{{ ben.gender }}</td>
                             <td style="color: var(--text-muted);">₱{{ ben.household_income|floatformat:0 }}</td>
-                            <td style="color: var(--text-muted); font-size: 0.85rem;">{{
-                                ben.get_employment_status_display }}</td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem;">{{ ben.get_employment_status_display }}</td>
                             <td>
                                 {% if ben.vulnerability_level == 'critical' %}
                                 <span class="badge-vuln badge-danger">{{ ben.vulnerability_score }} Critical</span>
@@ -115,8 +114,7 @@
     <!-- All Beneficiaries -->
     <div class="panel-card gap-32">
         <div class="panel-header">
-            <h5 class="fw-bold mb-0"><i class="fi fi-rr-users text-primary me-2"></i> All Beneficiaries ({{
-                total_beneficiaries }})</h5>
+            <h5 class="fw-bold mb-0"><i class="fi fi-rr-users text-primary me-2"></i> All Beneficiaries ({{ total_beneficiaries }})</h5>
         </div>
         <div class="p-4 pt-0">
             {% if beneficiaries %}
@@ -148,8 +146,7 @@
                                 <span class="badge-vuln badge-success">{{ ben.vulnerability_score }} Low</span>
                                 {% endif %}
                             </td>
-                            <td class="pe-4" style="color: var(--text-muted); font-size: 0.85rem;">{{
-                                ben.last_assistance_date|date:"M d, Y"|default:"Never" }}</td>
+                            <td class="pe-4" style="color: var(--text-muted); font-size: 0.85rem;">{{ ben.last_assistance_date|date:"M d, Y"|default:"Never" }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
