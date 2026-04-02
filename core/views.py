@@ -183,11 +183,15 @@ def landing_page(request):
 
 @login_required
 def home_redirect(request):
+    if request.user.is_superuser:
+        return redirect('admin_dashboard')
+    
     if hasattr(request.user, 'profile'):
         if request.user.profile.is_admin:
             return redirect('admin_dashboard')
-        elif request.user.profile.is_staff_role:
+        elif request.user.profile.is_staff_role or request.user.is_staff:
             return redirect('staff_dashboard')
+            
     return redirect('user_dashboard')
 
 
