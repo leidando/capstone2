@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ barangay.name }} CSWDO{% endblock %}
+{% block page_title %}Barangay {{ barangay.name }}{% endblock %}
+{% block breadcrumb %}Analytics / Barangay Detail{% endblock %}
+
+{% block content %}
+<div class="position-relative" style="z-index: 1;">
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-2">
+            <div class="metric-card h-100" style="border-left: 4px solid var(--primary) !important;">
+                <div class="card-body text-center p-3">
+                    <div class="small fw-bold text-muted text-uppercase mb-1">Population</div>
+                    <div class="fs-4 fw-bolder" style="color: var(--text);">{{ barangay.population|default:0 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="metric-card h-100" style="border-left: 4px solid var(--info) !important;">
+                <div class="card-body text-center p-3">
+                    <div class="small fw-bold text-muted text-uppercase mb-1">Beneficiaries</div>
+                    <div class="fs-4 fw-bolder" style="color: var(--text);">{{ total_beneficiaries }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="metric-card h-100" style="border-left: 4px solid var(--warning) !important;">
+                <div class="card-body text-center p-3">
+                    <div class="small fw-bold text-muted text-uppercase mb-1">Avg Vuln</div>
+                    <div
+                        class="fs-4 fw-bolder {% if avg_vulnerability >= 60 %}text-danger{% elif avg_vulnerability >= 40 %}text-warning{% else %}text-success{% endif %}">
+                        {{ avg_vulnerability }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="metric-card h-100" style="border-left: 4px solid var(--danger) !important;">
+                <div class="card-body text-center p-3">
+                    <div class="small fw-bold text-muted text-uppercase mb-1">High-Risk</div>
+                    <div class="fs-4 fw-bolder text-danger">{{ high_risk_individuals.count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="metric-card h-100" style="border-left: 4px solid var(--success) !important;">
+                <div class="card-body text-center p-3">
+                    <div class="small fw-bold text-muted text-uppercase mb-1">Services</div>
+                    <div class="fs-4 fw-bolder" style="color: var(--text);">{{ total_services }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="metric-card h-100"
+                style="border-left: 4px solid {% if service_gap_index > 5 %}var(--danger){% elif service_gap_index > 3 %}var(--warning){% else %}var(--success){% endif %} !important;">
+                <div class="card-body text-center p-3">
+                    <div class="small fw-bold text-muted text-uppercase mb-1">Gap Index</div>
+                    <div
+                        class="fs-4 fw-bolder {% if service_gap_index > 5 %}text-danger{% elif service_gap_index > 3 %}text-warning{% else %}text-success{% endif %}">
+                        {{ service_gap_index }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- High-Risk Individuals -->
+    <div class="panel-card gap-32 mb-4">
+        <div class="panel-header">
+            <h5 class="fw-bold mb-0"><i class="fi fi-rr-warning text-danger me-2"></i> High-Risk Individuals</h5>
+        </div>
+        <div class="p-4 pt-0">
+            {% if high_risk_individuals %}
+            <div class="table-responsive">
+                <table class="table-dark-custom">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Income</th>
+                            <th>Status</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ben in high_risk_individuals %}
+                        <tr>
+                            <td class="ps-4"><strong style="color: var(--text);">{{ ben.full_name }}</strong></td>
+                            <td style="color: var(--text-muted);">{{ ben.age }}</td>
+                            <td style="color: var(--text-muted);">{{ ben.gender }}</td>
+                            <td style="color: var(--text-muted);">₱{{ ben.household_income|floatformat:0 }}</td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem;">{{
+                                ben.get_employment_status_display }}</td>
+                            <td>
+                                {% if ben.vulnerability_level == 'critical' %}
+                                <span class="badge-vuln badge-danger">{{ ben.vulnerability_score }} Critical</span>
+                                {% else %}
+                                <span class="badge-vuln badge-warning">{{ ben.vulnerability_score }} High</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5" style="color: var(--text-muted);">
+                <i class="fi fi-rr-check-circle display-4 opacity-25 d-block mb-3"></i>
+                <p>No high-risk individuals detected in this barangay.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- All Beneficiaries -->
+    <div class="panel-card gap-32">
+        <div class="panel-header">
+            <h5 class="fw-bold mb-0"><i class="fi fi-rr-users text-primary me-2"></i> All Beneficiaries ({{
+                total_beneficiaries }})</h5>
+        </div>
+        <div class="p-4 pt-0">
+            {% if beneficiaries %}
+            <div class="table-responsive">
+                <table class="table-dark-custom">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Risk Level</th>
+                            <th class="pe-4">Last Assisted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ben in beneficiaries %}
+                        <tr>
+                            <td class="ps-4"><strong style="color: var(--text);">{{ ben.full_name }}</strong></td>
+                            <td style="color: var(--text-muted);">{{ ben.age }}</td>
+                            <td style="color: var(--text-muted);">{{ ben.gender }}</td>
+                            <td>
+                                {% if ben.vulnerability_level == 'critical' %}
+                                <span class="badge-vuln badge-danger">{{ ben.vulnerability_score }} Critical</span>
+                                {% elif ben.vulnerability_level == 'high' %}
+                                <span class="badge-vuln badge-warning">{{ ben.vulnerability_score }} High</span>
+                                {% elif ben.vulnerability_level == 'medium' %}
+                                <span class="badge-vuln badge-info">{{ ben.vulnerability_score }} Medium</span>
+                                {% else %}
+                                <span class="badge-vuln badge-success">{{ ben.vulnerability_score }} Low</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4" style="color: var(--text-muted); font-size: 0.85rem;">{{
+                                ben.last_assistance_date|date:"M d, Y"|default:"Never" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5" style="color: var(--text-muted);">
+                <p>No approved beneficiaries found in this barangay.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

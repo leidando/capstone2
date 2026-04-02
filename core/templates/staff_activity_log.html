@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Staff Activity Log  CSWDO{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block breadcrumb %}Admin / Staff / Activity{% endblock %}
+
+{% block content %}
+<div class="position-relative" style="z-index: 1;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h4 fw-bold mb-1" style="color: var(--text);">{{ title }}</h2>
+            <span style="color: var(--text-muted); font-size: 0.85rem;">{{ page_obj.paginator.count }} total entries tracked</span>
+        </div>
+        <a href="{% url 'staff_management' %}" class="btn btn-outline rounded-pill px-4">
+            <i class="fi fi-rr-arrow-left me-1"></i> Back to Staff
+        </a>
+    </div>
+
+    {% if page_obj %}
+    <div class="panel-card gap-32">
+        <div class="table-responsive">
+            <table class="table-dark-custom">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Staff Member</th>
+                        <th>Action Performed</th>
+                        <th>Target Record</th>
+                        <th>Description / Remarks</th>
+                        <th class="pe-4">Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in page_obj %}
+                    <tr>
+                        <td class="ps-4">
+                            <strong style="color: var(--text);">{{ log.staff.get_full_name|default:log.staff.username }}</strong>
+                        </td>
+                        <td>
+                            {% if log.action == 'approve' %}
+                            <span class="badge-vuln badge-success" style="font-size: 0.75rem;">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'reject' %}
+                            <span class="badge-vuln badge-danger" style="font-size: 0.75rem;">{{ log.get_action_display }}</span>
+                            {% else %}
+                            <span class="badge-vuln badge-info" style="font-size: 0.75rem;">{{ log.get_action_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="color: var(--text-secondary);">
+                            <span class="badge-vuln" style="background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); font-size: 0.7rem;">
+                                {{ log.target_type }} #{{ log.target_id }}
+                            </span>
+                        </td>
+                        <td style="color: var(--text-muted); font-size: 0.85rem;">{{ log.description|truncatewords:15 }}</td>
+                        <td class="pe-4" style="color: var(--text-muted); font-size: 0.8rem;">{{ log.timestamp|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="d-flex justify-content-between align-items-center p-3" style="background-color: var(--bg); border-top: 1px solid var(--border);">
+            <span style="color:var(--text-muted); font-size: 0.85rem;">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+            </span>
+            <div class="d-flex gap-1">
+                {% if page_obj.has_previous %}
+                <a class="btn btn-outline btn-sm" href="?page=1">&laquo; First</a>
+                <a class="btn btn-outline btn-sm" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="btn btn-primary btn-sm disabled">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a class="btn btn-outline btn-sm" href="?page={{ num }}">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <a class="btn btn-outline btn-sm" href="?page={{ page_obj.next_page_number }}">Next</a>
+                <a class="btn btn-outline btn-sm" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="panel-card gap-32">
+        <div class="text-center py-5">
+            <div style="font-size: 3rem; color: var(--border); margin-bottom: 16px;"><i class="fi fi-rr-time-past"></i></div>
+            <h5 class="fw-bold" style="color: var(--text);">No activity logged yet</h5>
+            <p style="color: var(--text-muted);">Staff actions will appear here once they start processing requests and managing beneficiary profiles.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

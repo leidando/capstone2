@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Staff Dashboard  CSWDO{% endblock %}
+{% block page_title %}Staff Dashboard{% endblock %}
+{% block breadcrumb %}Staff / Dashboard{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container position-relative" style="z-index: 1;">
+
+    <!-- SECTION 1: KEY METRICS -->
+    <h3 class="section-title mb-4"><i class="fi fi-rr-apps text-slate-500"></i> Key Operations Metrics</h3>
+    
+    <div class="row g-4 mb-5">
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="metric-card mc-blue">
+                <div class="metric-icon"><i class="fi fi-rr-folder"></i></div>
+                <div class="metric-label">Assigned Programs</div>
+                <div class="metric-value">{{ assigned_programs.count }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="metric-card mc-yellow">
+                <div class="metric-icon"><i class="fi fi-rr-hourglass"></i></div>
+                <div class="metric-label">Pending Requests</div>
+                <div class="metric-value">{{ pending_count }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="metric-card mc-green">
+                <div class="metric-icon"><i class="fi fi-rr-check-circle"></i></div>
+                <div class="metric-label">Approved</div>
+                <div class="metric-value">{{ approved_count }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="metric-card mc-red">
+                <div class="metric-icon"><i class="fi fi-rr-cross-circle"></i></div>
+                <div class="metric-label">Rejected</div>
+                <div class="metric-value">{{ rejected_count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: ASSIGNED PROGRAMS -->
+    <h3 class="section-title mb-4"><i class="fi fi-rr-folder-open text-slate-500"></i> My Assigned Programs</h3>
+    <div class="card mb-5">
+        <div class="card-header border-0 pt-4 px-4 bg-transparent">
+            <h5 class="card-title d-flex align-items-center gap-2 mb-0"><i class="fi fi-rr-list text-primary"></i> Program Overview</h5>
+        </div>
+        <div class="p-4" style="background-color: transparent;">
+            <div class="row g-3">
+                {% for prog in assigned_programs %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-slate-100 shadow-none" style="background: rgba(37, 99, 235, 0.02);">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold mb-2 text-slate-900">{{ prog.name }}</h6>
+                            <p class="small text-slate-500 mb-0">{{ prog.description|truncatewords:15 }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <p class="text-slate-400 text-center py-4 mb-0" style="font-size: 0.8125rem;">No programs assigned yet. Contact your administrator.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3: PENDING REQUESTS -->
+    <h3 class="section-title mb-4"><i class="fi fi-rr-clipboard-list text-slate-500"></i> Action Required</h3>
+
+    <div class="card mb-5">
+        <!-- Search bar for pending requests -->
+        <div class="p-4 border-bottom border-slate-100">
+            <form method="GET" class="row g-3 align-items-center">
+                {% if ben_search %}<input type="hidden" name="ben_search" value="{{ ben_search }}">{% endif %}
+                <div class="col-12 col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fi fi-rr-search"></i></span>
+                        <input type="text" name="req_search" value="{{ req_search }}" placeholder="Search applicant, program, barangay..."
+                            class="form-control border-start-0 ps-0">
+                    </div>
+                </div>
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-3 w-100">Search</button>
+                    {% if req_search %}
+                    <a href="{% url 'staff_dashboard' %}" class="btn btn-outline w-100 text-center">Clear</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <div class="card-header border-0 pt-4 px-4 bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="card-title d-flex align-items-center gap-2 mb-0"><i class="fi fi-rr-time-fast text-warning"></i> Pending Requests</h5>
+            <span class="badge bg-warning text-white" style="font-size: 0.8125rem;">{{ pending_count|default:"0" }} pending</span>
+        </div>
+        <div class="table-responsive flex-grow-1">
+            {% if pending_requests %}
+            <table class="table-dark-custom">
+                <thead>
+                    <tr>
+                        <th class="text-start">Applicant</th>
+                        <th class="text-start">Program</th>
+                        <th class="text-start">Barangay</th>
+                        <th class="text-center">Vulnerability</th>
+                        <th class="text-start">Date</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in pending_requests %}
+                    <tr>
+                        <td class="text-start">
+                            <strong style="color: var(--text);">{{ req.user.get_full_name|default:req.user.username }}</strong>
+                        </td>
+                        <td class="text-start" style="color: var(--text-secondary);">{{ req.program.name|truncatewords:5 }}</td>
+                        <td class="text-start" style="color: var(--text-muted);">{{ req.barangay.name|default:"—" }}</td>
+                        <td class="text-center">
+                            {% if req.beneficiary %}
+                                {% if req.beneficiary.vulnerability_level == 'critical' %}
+                                <span class="badge-vuln badge-danger">{{ req.beneficiary.vulnerability_score }} Critical</span>
+                                {% elif req.beneficiary.vulnerability_level == 'high' %}
+                                <span class="badge-vuln badge-warning">{{ req.beneficiary.vulnerability_score }} High</span>
+                                {% elif req.beneficiary.vulnerability_level == 'medium' %}
+                                <span class="badge-vuln badge-info">{{ req.beneficiary.vulnerability_score }} Medium</span>
+                                {% else %}
+                                <span class="badge-vuln badge-success">{{ req.beneficiary.vulnerability_score }} Low</span>
+                                {% endif %}
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="text-start" style="color: var(--text-muted); font-size: 0.85rem;">{{ req.date_submitted|date:"M d, Y" }}</td>
+                        <td class="text-end pe-4">
+                            <div class="d-flex justify-content-end align-items-center gap-2">
+                                <a href="{% url 'staff_request_detail' req.pk %}" class="btn btn-sm btn-outline rounded-pill px-3" title="View Details">
+                                    <i class="fi fi-rr-eye"></i>
+                                </a>
+                                <form method="post" action="{% url 'staff_request_update_status' req.pk %}" class="m-0 p-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="approved">
+                                    <button type="submit" class="btn btn-sm" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4);" title="Approve">
+                                        <i class="fi fi-rr-check"></i>
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'staff_request_update_status' req.pk %}" class="m-0 p-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="rejected">
+                                    <button type="submit" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);" title="Reject">
+                                        <i class="fi fi-rr-cross"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination for Pending Requests -->
+            {% if pending_requests.paginator.num_pages > 1 %}
+            <div class="d-flex justify-content-between align-items-center p-3" style="background-color: var(--bg); border-top: 1px solid var(--border);">
+                <span style="color:var(--text-muted); font-size: 0.85rem;">
+                    Showing {{ pending_requests.start_index }} to {{ pending_requests.end_index }} of {{ pending_requests.paginator.count }}
+                </span>
+                <div class="d-flex gap-1">
+                    {% if pending_requests.has_previous %}
+                    <a class="btn btn-outline btn-sm" href="?req_page={{ pending_requests.previous_page_number }}{% if req_search %}&req_search={{ req_search }}{% endif %}{% if ben_search %}&ben_search={{ ben_search }}{% endif %}">Prev</a>
+                    {% endif %}
+                    {% for num in pending_requests.paginator.page_range %}
+                        {% if pending_requests.number == num %}
+                        <span class="btn btn-primary btn-sm disabled">{{ num }}</span>
+                        {% elif num > pending_requests.number|add:'-3' and num < pending_requests.number|add:'3' %}
+                        <a class="btn btn-outline btn-sm" href="?req_page={{ num }}{% if req_search %}&req_search={{ req_search }}{% endif %}{% if ben_search %}&ben_search={{ ben_search }}{% endif %}">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    {% if pending_requests.has_next %}
+                    <a class="btn btn-outline btn-sm" href="?req_page={{ pending_requests.next_page_number }}{% if req_search %}&req_search={{ req_search }}{% endif %}{% if ben_search %}&ben_search={{ ben_search }}{% endif %}">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <div style="font-size: 3rem; color: var(--border); margin-bottom: 16px;"><i class="fi fi-rr-check-circle"></i></div>
+                <h5 class="fw-bold mb-2" style="color: var(--text);">All caught up!</h5>
+                <p style="color: var(--text-muted);">
+                    {% if req_search %}No pending requests match "{{ req_search }}".{% else %}No pending requests for your assigned programs.{% endif %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- SECTION 4: BENEFICIARIES -->
+    <h3 class="section-title"><i class="fi fi-rr-users" style="color: var(--text-muted);"></i> Beneficiaries Overview</h3>
+
+    <!-- Search bar for beneficiaries -->
+    <div class="panel-card" style="margin-bottom: 0; border-bottom: none; border-radius: 12px 12px 0 0;">
+        <div class="p-3">
+            <form method="GET" class="row g-3 align-items-center">
+                {% if req_search %}<input type="hidden" name="req_search" value="{{ req_search }}">{% endif %}
+                <div class="col-12 col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text" style="background:var(--bg); border-color:var(--border); color:var(--text-muted);"><i class="fi fi-rr-search"></i></span>
+                        <input type="text" name="ben_search" value="{{ ben_search }}" placeholder="Search beneficiary name, barangay..."
+                            class="form-control border-start-0 ps-0" style="background:var(--bg); border-color:var(--border); color:var(--text);">
+                    </div>
+                </div>
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-3 w-100">Search</button>
+                    {% if ben_search %}
+                    <a href="{% url 'staff_dashboard' %}{% if req_search %}?req_search={{ req_search }}{% endif %}" class="btn btn-outline">Clear</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel-card gap-32" style="border-radius: 0 0 12px 12px;">
+        <div class="panel-header">
+            <h5 class="d-flex align-items-center gap-2"><i class="fi fi-rr-user text-info"></i> Beneficiaries Under My Programs</h5>
+        </div>
+        <div class="table-responsive flex-grow-1">
+            {% if beneficiaries %}
+            <table class="table-dark-custom">
+                <thead>
+                    <tr>
+                        <th class="text-start">Name</th>
+                        <th class="text-start">Barangay</th>
+                        <th class="text-center">Age</th>
+                        <th class="text-center pe-4">Vulnerability</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ben in beneficiaries %}
+                    <tr>
+                        <td class="text-start"><strong style="color: var(--text);">{{ ben.full_name }}</strong></td>
+                        <td class="text-start" style="color: var(--text-muted);">{{ ben.barangay.name }}</td>
+                        <td class="text-center" style="color: var(--text-muted);">{{ ben.age }}</td>
+                        <td class="text-center pe-4">
+                            {% if ben.vulnerability_level == 'critical' %}
+                            <span class="badge-vuln badge-danger">{{ ben.vulnerability_score }} Critical</span>
+                            {% elif ben.vulnerability_level == 'high' %}
+                            <span class="badge-vuln badge-warning">{{ ben.vulnerability_score }} High</span>
+                            {% elif ben.vulnerability_level == 'medium' %}
+                            <span class="badge-vuln badge-info">{{ ben.vulnerability_score }} Medium</span>
+                            {% else %}
+                            <span class="badge-vuln badge-success">{{ ben.vulnerability_score }} Low</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination for Beneficiaries -->
+            {% if beneficiaries.paginator.num_pages > 1 %}
+            <div class="d-flex justify-content-between align-items-center p-3" style="background-color: var(--bg); border-top: 1px solid var(--border);">
+                <span style="color:var(--text-muted); font-size: 0.85rem;">
+                    Showing {{ beneficiaries.start_index }} to {{ beneficiaries.end_index }} of {{ beneficiaries.paginator.count }}
+                </span>
+                <div class="d-flex gap-1">
+                    {% if beneficiaries.has_previous %}
+                    <a class="btn btn-outline btn-sm" href="?ben_page={{ beneficiaries.previous_page_number }}{% if req_search %}&req_search={{ req_search }}{% endif %}{% if ben_search %}&ben_search={{ ben_search }}{% endif %}">Prev</a>
+                    {% endif %}
+                    {% for num in beneficiaries.paginator.page_range %}
+                        {% if beneficiaries.number == num %}
+                        <span class="btn btn-primary btn-sm disabled">{{ num }}</span>
+                        {% elif num > beneficiaries.number|add:'-3' and num < beneficiaries.number|add:'3' %}
+                        <a class="btn btn-outline btn-sm" href="?ben_page={{ num }}{% if req_search %}&req_search={{ req_search }}{% endif %}{% if ben_search %}&ben_search={{ ben_search }}{% endif %}">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    {% if beneficiaries.has_next %}
+                    <a class="btn btn-outline btn-sm" href="?ben_page={{ beneficiaries.next_page_number }}{% if req_search %}&req_search={{ req_search }}{% endif %}{% if ben_search %}&ben_search={{ ben_search }}{% endif %}">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <p style="color: var(--text-muted);">
+                    {% if ben_search %}No beneficiaries match "{{ ben_search }}".{% else %}No beneficiaries found under your assigned programs.{% endif %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

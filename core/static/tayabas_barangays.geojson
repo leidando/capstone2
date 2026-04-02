@@ -1,0 +1,410 @@
+{
+  "type": "FeatureCollection",
+  "generator": "overpass-turbo",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "timestamp": "2026-02-26T14:07:20Z",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/358644581",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "is_in:province": "Tayabas",
+        "is_in:town": "Tayabas",
+        "name": "Calumpang",
+        "place": "village"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5568705,
+          13.9758933
+        ]
+      },
+      "id": "node/358644581"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/480597796",
+        "name": "Palale",
+        "place": "village"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.6724445,
+          14.0486623
+        ]
+      },
+      "id": "node/480597796"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1152357234",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "name": "Dapdap",
+        "place": "village",
+        "population": "2413"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5695538,
+          14.0529257
+        ]
+      },
+      "id": "node/1152357234"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1333016222",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "is_in:city": "Tayabas",
+        "name": "Baguio",
+        "place": "village",
+        "postal_code": "4327"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5860836,
+          14.0151726
+        ]
+      },
+      "id": "node/1333016222"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1333016265",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "is_in:city": "Tayabas",
+        "name": "Potol",
+        "place": "village",
+        "postal_code": "4327"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5733112,
+          13.9991216
+        ]
+      },
+      "id": "node/1333016265"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1333016291",
+        "is_in:province": "Quezon",
+        "is_in:town": "Tayabas",
+        "name": "San Diego",
+        "place": "suburb"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5937059,
+          14.0273866
+        ]
+      },
+      "id": "node/1333016291"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1333016296",
+        "name": "San Isidro",
+        "place": "suburb"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5893575,
+          14.0247206
+        ]
+      },
+      "id": "node/1333016296"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1333016302",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "is_in:city": "Tayabas",
+        "name": "Camaysa",
+        "place": "village",
+        "population": "2029"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5776182,
+          14.0408873
+        ]
+      },
+      "id": "node/1333016302"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1333016418",
+        "is_in:province": "Quezon",
+        "is_in:town": "Tayabas",
+        "name": "San Roque",
+        "place": "suburb"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5913173,
+          14.0251603
+        ]
+      },
+      "id": "node/1333016418"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2550380769",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "is_in:city": "Tayabas",
+        "name": "Anos",
+        "place": "village",
+        "postal_code": "4327"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5682319,
+          13.991346
+        ]
+      },
+      "id": "node/2550380769"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2929287788",
+        "is_in:town": "Tayabas",
+        "name": "Mayowe",
+        "place": "village",
+        "postal_code": "4327"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5752393,
+          13.9683497
+        ]
+      },
+      "id": "node/2929287788"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3213699134",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "is_in:city": "Tayabas",
+        "name": "Ilasan Ibaba",
+        "old_ref": "045647021",
+        "place": "village",
+        "population": "982",
+        "population:2015": "966",
+        "population:date": "2020-05-01",
+        "postal_code": "4327",
+        "ref": "0405647021"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.634334,
+          14.0635133
+        ]
+      },
+      "id": "node/3213699134"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4199868160",
+        "is_in:city": "Tayabas",
+        "name": "Malao-a",
+        "place": "village",
+        "postal_code": "4327"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5766012,
+          14.008305
+        ]
+      },
+      "id": "node/4199868160"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4199868161",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "is_in:city": "Tayabas",
+        "name": "Ibabang Bukal",
+        "place": "village",
+        "postal_code": "4327"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5647565,
+          14.0026316
+        ]
+      },
+      "id": "node/4199868161"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6488958780",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "name": "Ibas",
+        "place": "village",
+        "population": "896"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5729205,
+          14.0625398
+        ]
+      },
+      "id": "node/6488958780"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7244050859",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "name": "Lakawan",
+        "old_ref": "045647036",
+        "place": "village",
+        "population": "1438",
+        "population:date": "2020-05-01"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.6202091,
+          14.0122698
+        ]
+      },
+      "id": "node/7244050859"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7391374083",
+        "name": "Domoit",
+        "place": "village"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5917069,
+          13.9754921
+        ]
+      },
+      "id": "node/7391374083"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7659685665",
+        "name": "Nangka Ibaba",
+        "place": "village"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.6058716,
+          13.9904994
+        ]
+      },
+      "id": "node/7659685665"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10963243730",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "is_in:city": "Tayabas",
+        "name": "Gibanga",
+        "old_ref": "04005647018",
+        "place": "village",
+        "population": "944",
+        "population:2015": "943",
+        "population:date": "2020-05-01",
+        "ref": "0405647018",
+        "source:population": "Philippine Statistics Authority",
+        "source:population:url": "https://psa.gov.ph/classification/psgc/?q=psgc/barangays/0405647000"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5446563,
+          13.991871
+        ]
+      },
+      "id": "node/10963243730"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12186513008",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "name": "Mate",
+        "place": "village"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.6357836,
+          14.0036411
+        ]
+      },
+      "id": "node/12186513008"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12384793692",
+        "admin_level": "10",
+        "admin_type:PH": "barangay",
+        "name": "Lalo",
+        "place": "village"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5713009,
+          14.0411348
+        ]
+      },
+      "id": "node/12384793692"
+    }
+  ]
+}

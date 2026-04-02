@@ -1,0 +1,570 @@
+/* ══════════════════════════════════════════════════════════════
+   CSWDO Landing Page — Custom Styles
+   Bootstrap 5 overrides + landing-specific components
+   ══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ── Design Tokens ──────────────────────────────────────── */
+:root {
+    --navy: #001F3F;
+    --navy-dark: #001530;
+    --navy-light: #003366;
+    --green: #198754;
+    --green-light: #28a745;
+    --bg-light: #F8F9FA;
+    --card-bg: #F1F3F5;
+    --text-dark: #212529;
+    --text-body: #495057;
+    --text-muted: #6C757D;
+}
+
+/* ── Base ───────────────────────────────────────────────── */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text-dark);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+.text-navy { color: var(--navy) !important; }
+.bg-navy { background-color: var(--navy) !important; }
+
+/* ── Navbar ─────────────────────────────────────────────── */
+.navbar {
+    padding: 1rem 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    backdrop-filter: none;
+}
+
+.navbar-scrolled {
+    background: rgba(0, 31, 63, 0.97) !important;
+    backdrop-filter: blur(20px);
+    padding: 0.6rem 0;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+}
+
+.navbar .nav-link {
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem !important;
+    transition: color 0.3s;
+    position: relative;
+}
+
+.navbar .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--green);
+    transition: all 0.3s;
+    transform: translateX(-50%);
+}
+
+.navbar .nav-link:hover {
+    color: #fff;
+}
+
+.navbar .nav-link:hover::after {
+    width: 60%;
+}
+
+.navbar-collapse {
+    transition: all 0.3s ease;
+}
+
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        background: rgba(0, 31, 63, 0.98);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        display: none;
+    }
+    .navbar-collapse.show {
+        display: block !important;
+    }
+}
+
+/* ── Hero Section ───────────────────────────────────────── */
+.hero-section {
+    background: var(--navy);
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('/static/images/tayabas.png') center/cover no-repeat;
+    opacity: 0.08;
+    z-index: 0;
+}
+
+.hero-bg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0, 31, 63, 0.95) 0%, rgba(0, 21, 48, 0.85) 50%, rgba(0, 31, 63, 0.9) 100%);
+    z-index: 1;
+}
+
+.hero-title {
+    font-size: 3.2rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+}
+
+.hero-desc {
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+.hero-cta {
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Stat Pills */
+.stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.75rem 1.1rem;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s;
+}
+
+.stat-pill:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
+}
+
+.stat-pill-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1rem;
+}
+
+/* Dashboard Mockup */
+.hero-dashboard-mockup {
+    position: relative;
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+}
+
+.mockup-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.mockup-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1.2rem;
+    background: #F8F9FA;
+    border-bottom: 1px solid #E9ECEF;
+}
+
+.mockup-dots {
+    display: flex;
+    gap: 6px;
+}
+
+.mockup-dots span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.mockup-dots span:nth-child(1) { background: #FF5F57; }
+.mockup-dots span:nth-child(2) { background: #FFBD2E; }
+.mockup-dots span:nth-child(3) { background: #28CA42; }
+
+.mockup-body {
+    padding: 1.5rem;
+}
+
+.mockup-kpi {
+    background: var(--bg-light);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.mockup-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    height: 120px;
+    padding: 1rem 0.5rem 0;
+}
+
+.chart-bar {
+    flex: 1;
+    background: linear-gradient(180deg, var(--green) 0%, var(--green-light) 100%);
+    border-radius: 6px 6px 0 0;
+    transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.chart-bar:nth-child(even) {
+    background: linear-gradient(180deg, var(--navy) 0%, var(--navy-light) 100%);
+}
+
+/* Floating stat card */
+.floating-stat-card {
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: float 5s ease-in-out infinite 1s;
+}
+
+/* ── Service Cards ──────────────────────────────────────── */
+.service-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #E9ECEF;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.service-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--navy), var(--green));
+    transform: scaleX(0);
+    transition: transform 0.4s;
+}
+
+.service-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 40px rgba(0, 31, 63, 0.12);
+}
+
+.service-card:hover::before {
+    transform: scaleX(1);
+}
+
+.service-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(0, 31, 63, 0.06) 0%, rgba(25, 135, 84, 0.06) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--navy);
+    transition: all 0.3s;
+}
+
+.service-card:hover .service-icon {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--green) 100%);
+    color: #fff;
+    transform: scale(1.08);
+}
+
+/* ── Features Section ───────────────────────────────────── */
+.feature-icon-box {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 12px;
+    background: var(--bg-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    transition: all 0.3s;
+}
+
+.feature-item:hover .feature-icon-box {
+    background: var(--navy);
+    color: #fff !important;
+}
+
+.feature-item:hover .feature-icon-box i {
+    color: #fff !important;
+}
+
+.features-chart-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.08);
+    border: 1px solid #E9ECEF;
+}
+
+.growth-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.growth-bar-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.growth-label {
+    width: 30px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.growth-bar-bg {
+    flex: 1;
+    height: 28px;
+    background: var(--bg-light);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.growth-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--navy) 0%, var(--green) 100%);
+    border-radius: 8px;
+    transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mini-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--bg-light);
+    border-radius: 12px;
+}
+
+.mini-stat-card i {
+    font-size: 1.3rem;
+}
+
+/* ── GIS Section ────────────────────────────────────────── */
+.gis-section {
+    background: var(--navy);
+    position: relative;
+    overflow: hidden;
+}
+
+.gis-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(25, 135, 84, 0.08) 0%, transparent 70%);
+}
+
+.gis-stat-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 1.25rem;
+    backdrop-filter: blur(10px);
+    color: #fff;
+    transition: all 0.3s;
+}
+
+.gis-stat-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-3px);
+}
+
+.gis-map-mockup {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.gis-map-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.gis-map-body {
+    position: relative;
+    height: 320px;
+    background:
+        radial-gradient(ellipse at 45% 50%, rgba(25, 135, 84, 0.15) 0%, transparent 60%),
+        linear-gradient(135deg, rgba(0, 31, 63, 0.5) 0%, rgba(0, 51, 102, 0.3) 100%);
+}
+
+/* Map dots */
+.map-dot {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse-dot 3s ease-in-out infinite;
+}
+
+.map-dot.dot-lg {
+    width: 16px;
+    height: 16px;
+    box-shadow: 0 0 20px rgba(25, 135, 84, 0.5);
+}
+
+.map-dot.dot-md {
+    width: 12px;
+    height: 12px;
+    box-shadow: 0 0 15px rgba(25, 135, 84, 0.4);
+    animation-delay: 1s;
+}
+
+.map-dot.dot-sm {
+    width: 8px;
+    height: 8px;
+    box-shadow: 0 0 10px rgba(25, 135, 84, 0.3);
+    animation-delay: 2s;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.3); }
+}
+
+/* Map grid lines */
+.map-grid-h, .map-grid-v {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.map-grid-h {
+    left: 0;
+    right: 0;
+    height: 1px;
+}
+
+.map-grid-v {
+    top: 0;
+    bottom: 0;
+    width: 1px;
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+.site-footer {
+    background: var(--navy-dark);
+    color: #fff;
+}
+
+.footer-links li {
+    margin-bottom: 0.6rem;
+}
+
+.footer-links a,
+.footer-links span {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.88rem;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.footer-links a:hover {
+    color: var(--green-light);
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 991.98px) {
+    .hero-title {
+        font-size: 2.4rem;
+    }
+
+    .hero-desc {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    .stat-pill {
+        padding: 0.6rem 0.9rem;
+    }
+
+    .gis-map-body {
+        height: 220px;
+    }
+}
+
+/* ── Scroll Animations ──────────────────────────────────── */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.service-card,
+.feature-item,
+.features-chart-card,
+.gis-stat-card,
+.gis-map-mockup {
+    animation: fadeInUp 0.6s ease both;
+}
+
+.service-card:nth-child(2) { animation-delay: 0.1s; }
+.service-card:nth-child(3) { animation-delay: 0.2s; }
+.service-card:nth-child(4) { animation-delay: 0.3s; }
+.service-card:nth-child(5) { animation-delay: 0.4s; }
+.service-card:nth-child(6) { animation-delay: 0.5s; }
+.service-card:nth-child(7) { animation-delay: 0.6s; }
+.service-card:nth-child(8) { animation-delay: 0.7s; }

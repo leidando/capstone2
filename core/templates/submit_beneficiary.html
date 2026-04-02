@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Information  CSWDO{% endblock %}
+{% block page_title %}
+{% if is_edit %}Edit Beneficiary Information{% else %}Submit Beneficiary Information{% endif %}
+{% endblock %}
+{% block breadcrumb %}Services / {% if is_edit %}Edit Information{% else %}Submit Information{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8 col-xl-7">
+            <div class="panel-card gap-32">
+                <div class="panel-header">
+                    <h4 class="fw-bold mb-0">
+                        <i class="fi fi-rr-edit text-primary me-2"></i> {% if is_edit %}Update Your Profile{% else %}Beneficiary Registration Form{% endif %}
+                    </h4>
+                </div>
+                <div class="p-4 p-md-5">
+                    <div class="alert alert-info d-flex align-items-center gap-3 mb-4">
+                        <i class="fi fi-rr-info fs-4"></i>
+                        <p class="mb-0 small">
+                            {% if is_edit %}
+                            Update the details of your beneficiary profile. Submitting changes will reset your status back to pending for administrative review.
+                            {% else %}
+                            Fill out the form below to create your beneficiary profile. Once verified by an administrator, you will be able to apply for specific assistance programs.
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <form method="POST" id="beneficiary-form" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold mb-2" for="ben-fullname" style="color: var(--text-secondary); font-size: 0.9rem;">Full Name</label>
+                            {{ form.full_name }}
+                            {% if form.full_name.errors %}<div class="text-danger small mt-1">{{ form.full_name.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" for="ben-age" style="color: var(--text-secondary); font-size: 0.9rem;">Age</label>
+                                {{ form.age }}
+                                {% if form.age.errors %}<div class="text-danger small mt-1">{{ form.age.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" for="ben-gender" style="color: var(--text-secondary); font-size: 0.9rem;">Gender</label>
+                                {{ form.gender }}
+                                {% if form.gender.errors %}<div class="text-danger small mt-1">{{ form.gender.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold mb-2" for="ben-barangay" style="color: var(--text-secondary); font-size: 0.9rem;">Your Barangay</label>
+                            {{ form.barangay }}
+                            <div style="color: var(--text-muted); font-size: 0.75rem; margin-top: 8px;">
+                                <i class="fi fi-rr-info text-primary me-1"></i> Selection is based on current residency in Tayabas City.
+                            </div>
+                            {% if form.barangay.errors %}<div class="text-danger small mt-1">{{ form.barangay.errors.0 }}</div>{% endif %}
+                        </div>
+
+
+                        <div class="row g-4 mb-5">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" for="ben-income" style="color: var(--text-secondary); font-size: 0.9rem;">Monthly Household Income (₱)</label>
+                                {{ form.household_income }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" for="ben-family" style="color: var(--text-secondary); font-size: 0.9rem;">Total Family Members</label>
+                                {{ form.family_members }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3 pt-4" style="border-top: 1px solid var(--border);">
+                            <button type="submit" class="btn btn-primary px-4 py-2 fw-bold" id="btn-submit-beneficiary">
+                                <i class="fi fi-rr-paper-plane me-1"></i> {% if is_edit %}Save & Request Re-verification{% else %}Submit Registration{% endif %}
+                            </button>
+                            <a href="{% url 'user_dashboard' %}" class="btn btn-outline px-4 py-2">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Requests  CSWDO{% endblock %}
+{% block page_title %}Assistance Requests{% endblock %}
+{% block breadcrumb %}Admin / Requests{% endblock %}
+
+{% block content %}
+
+<!-- Summary Section -->
+<div class="row g-4 mb-5">
+    <div class="col-12 col-md-3">
+        <div class="metric-card mc-blue">
+            <div class="metric-icon"><i class="fi fi-rr-clipboard-list"></i></div>
+            <div class="metric-label">Total Requests</div>
+            <div class="metric-value">{{ total_count }}</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-3">
+        <div class="metric-card mc-yellow">
+            <div class="metric-icon"><i class="fi fi-rr-time-fast"></i></div>
+            <div class="metric-label">Pending</div>
+            <div class="metric-value">{{ pending_count }}</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-3">
+        <div class="metric-card mc-green">
+            <div class="metric-icon"><i class="fi fi-rr-check-circle"></i></div>
+            <div class="metric-label">Approved</div>
+            <div class="metric-value text-success">{{ approved_count }}</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-3">
+        <div class="metric-card mc-red">
+            <div class="metric-icon"><i class="fi fi-rr-cross-circle"></i></div>
+            <div class="metric-label">Rejected</div>
+            <div class="metric-value text-danger">{{ rejected_count }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card p-4 mb-5">
+    <form method="GET" class="row g-3 align-items-center" id="filter-form">
+        <!-- Preserve sorting when making a new search/filter -->
+        <input type="hidden" name="sort" value="{{ sort }}">
+        
+        <div class="col-12 col-md-4">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fi fi-rr-search"></i></span>
+                <input type="text" name="search" value="{{ search }}" placeholder="Search citizen, program..."
+                    class="form-control border-start-0 ps-0" id="filter-search">
+            </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <select name="program" class="form-select" id="filter-program">
+                <option value="">All Programs</option>
+                {% for p in programs %}
+                <option value="{{ p.id }}" {% if program_filter|is_equal:p.id %}selected{% endif %}>
+                    {{ p.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <select name="status" class="form-select" id="filter-status">
+                <option value="">All Statuses</option>
+                <option value="submitted" {% if status_filter|is_equal:'submitted' %}selected{% endif %}>Submitted</option>
+                <option value="under_review" {% if status_filter|is_equal:'under_review' %}selected{% endif %}>Under Review</option>
+                <option value="approved" {% if status_filter|is_equal:'approved' %}selected{% endif %}>Approved</option>
+                <option value="rejected" {% if status_filter|is_equal:'rejected' %}selected{% endif %}>Rejected</option>
+            </select>
+        </div>
+
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary px-3 w-100" id="filter-apply">Filter</button>
+            <a href="{% url 'request_list' %}" class="btn btn-outline w-100 text-center" id="filter-clear">Clear</a>
+        </div>
+    </form>
+</div>
+
+<!-- Requests Table -->
+<div class="card mb-5">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+        <h5 class="card-title d-flex align-items-center gap-2 mb-0"><i class="fi fi-rr-clipboard-list text-primary"></i> Assistance Requests</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table mb-0" id="requests-table">
+            <thead>
+                <tr>
+                    <th class="ps-4">#</th>
+                    <th>
+                        <a href="?{% url_replace sort='name_asc' %}" style="color:var(--text-muted); text-decoration:none;">Citizen</a>
+                        {% if sort == 'name_asc' %}<i class="fi fi-rr-caret-up ms-1" style="color:var(--primary);"></i>{% elif sort == 'name_desc' %}<a href="?{% url_replace sort='name_asc' %}"><i class="fi fi-rr-caret-down ms-1 style="color:var(--primary);"></i></a>{% endif %}
+                    </th>
+                    <th>Program</th>
+                    <th>Documents</th>
+                    <th>Status</th>
+                    <th>
+                        <a href="?{% url_replace sort='date_asc' %}" style="color:var(--text-muted); text-decoration:none;">Date</a>
+                        {% if sort == 'date_desc' %}<i class="fi fi-rr-caret-down ms-1" style="color:var(--primary);"></i>{% elif sort == 'date_asc' %}<i class="fi fi-rr-caret-up ms-1" style="color:var(--primary);"></i>{% endif %}
+                    </th>
+                    <th class="pe-4 text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in page_obj %}
+                <tr>
+                    <td class="ps-4" style="color:var(--text-muted);">#{{ req.pk }}</td>
+                    <td>
+                        <strong style="color:var(--text);">{{ req.user.get_full_name|default:req.user.username }}</strong><br>
+                        <span style="color:var(--text-muted); font-size: 0.8rem;">{{ req.barangay.name|default:"" }}</span>
+                    </td>
+                    <td>
+                        <div style="color:var(--text); max-width: 200px;" class="fw-bold text-truncate" title="{{ req.program.name }}">
+                            {{ req.program.name }}
+                        </div>
+                        {% if req.selected_category %}
+                        <div style="color:var(--text-muted); font-size: 0.75rem; margin-top: 4px;">
+                             {{ req.selected_category }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge-vuln" style="background: rgba(148, 163, 184, 0.1); color: var(--text-muted); border: 1px solid rgba(148, 163, 184, 0.2);"><i class="fi fi-rr-clip me-1"></i> {{ req.uploaded_count }}/{{ req.application_documents.count }}</span>
+                    </td>
+                    <td>
+                        {% if req.status == 'approved' %}
+                        <span class="badge-vuln badge-success"><i class="fi fi-rr-check-circle me-1"></i> {{ req.get_status_display }}</span>
+                        {% elif req.status == 'rejected' %}
+                        <span class="badge-vuln badge-danger"><i class="fi fi-rr-cross-circle me-1"></i> {{ req.get_status_display }}</span>
+                        {% elif req.status == 'under_review' %}
+                        <span class="badge-vuln badge-info"><i class="fi fi-rr-eye me-1"></i> {{ req.get_status_display }}</span>
+                        {% else %}
+                        <span class="badge-vuln badge-warning"><i class="fi fi-rr-time-fast me-1"></i> {{ req.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="color:var(--text-secondary); font-size: 0.85rem;">{{ req.date_submitted|date:"M d, Y" }}</td>
+                    <td class="pe-4 text-end">
+                        <div class="d-flex gap-2 justify-content-end align-items-center">
+                            <a href="{% url 'request_detail' req.pk %}" class="btn btn-outline btn-sm px-3 rounded-pill" style="font-size: 0.8rem;">
+                                <i class="fi fi-rr-eye me-1"></i> Review
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <div class="d-flex justify-content-between align-items-center p-3" style="background-color: var(--bg); border-top: 1px solid var(--border);">
+            <span style="color:var(--text-muted); font-size: 0.85rem;">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} requests
+            </span>
+            <div class="d-flex gap-1">
+                {% if page_obj.has_previous %}
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=1 %}">&laquo; First</a>
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=page_obj.previous_page_number %}">Prev</a>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="btn btn-primary btn-sm disabled">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a class="btn btn-outline btn-sm" href="?{% url_replace page=num %}">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=page_obj.next_page_number %}">Next</a>
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=page_obj.paginator.num_pages %}">Last &raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% else %}
+        <div class="text-center py-5">
+            <div style="font-size: 3rem; color: #334155; margin-bottom: 16px;"><i class="fi fi-rr-mailbox"></i></div>
+            <h5 class="fw-bold" style="color:var(--text); margin-bottom: 8px;">No requests found</h5>
+            <p style="color:var(--text-muted);">Try adjusting your search or filters.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

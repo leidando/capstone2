@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Staff Management  CSWDO{% endblock %}
+{% block page_title %}Staff Management{% endblock %}
+{% block breadcrumb %}Admin / Staff{% endblock %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h2 class="h4 fw-bold mb-1 text-slate-900">Staff Accounts</h2>
+            <span class="text-slate-500" style="font-size: 0.8125rem;">Manage staff members and their program assignments.</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'staff_create' %}" class="btn btn-primary px-3" id="btn-create-staff">
+                <i class="fi fi-rr-plus me-1"></i> Create Staff
+            </a>
+            <a href="{% url 'staff_activity_log_all' %}" class="btn btn-outline px-3" id="btn-view-logs">
+                <i class="fi fi-rr-time-past me-1"></i> Activity Logs
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="card p-4 mb-5">
+        <form method="GET" class="row g-3 align-items-center" id="staff-search-form">
+            <div class="col-12 col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fi fi-rr-search"></i></span>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Search name, username, email..."
+                        class="form-control border-start-0 ps-0" id="staff-search-input">
+                </div>
+            </div>
+            <div class="col-12 col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary px-3 w-100">Search</button>
+                {% if search %}
+                <a href="{% url 'staff_management' %}" class="btn btn-outline w-100 text-center">Clear</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {% if staff_profiles %}
+    <div class="card mb-5">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0" id="staff-table">
+                    <thead>
+                    <tr>
+                        <th class="ps-4">Staff Member</th>
+                        <th>Email</th>
+                        <th>Assigned Programs</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sp in staff_profiles %}
+                    <tr>
+                        <td class="ps-4">
+                            <strong class="text-slate-900">{{ sp.user.get_full_name|default:sp.user.username }}</strong>
+                            <br><small class="text-slate-500">@{{ sp.user.username }}</small>
+                        </td>
+                        <td class="text-slate-600">{{ sp.user.email }}</td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for prog in sp.assigned_programs.all %}
+                                <span class="badge bg-info text-white" style="font-size: 0.75rem;">{{ prog.name|truncatewords:3 }}</span>
+                                {% empty %}
+                                <span class="text-slate-400" style="font-size: 0.8125rem;">None assigned</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if sp.is_active %}
+                            <span class="badge bg-success text-white">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger text-white">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <!-- Toggle Active -->
+                                <form method="post" action="{% url 'staff_toggle_active' sp.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm {% if sp.is_active %}btn-outline{% else %}btn-success{% endif %}" title="{% if sp.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                        {% if sp.is_active %}<i class="fi fi-rr-ban"></i>{% else %}<i class="fi fi-rr-check"></i>{% endif %}
+                                    </button>
+                                </form>
+                                <!-- Edit Programs Modal Trigger -->
+                                <button type="button" class="btn btn-sm btn-outline" data-bs-toggle="modal" data-bs-target="#editPrograms{{ sp.pk }}" title="Edit Programs">
+                                    <i class="fi fi-rr-folder"></i>
+                                </button>
+                                <!-- View Logs -->
+                                <a href="{% url 'staff_activity_log' sp.user.pk %}" class="btn btn-sm btn-outline" title="View Activity">
+                                    <i class="fi fi-rr-time-past"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Modal moved to end of file to fix z-index stacking -->
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card p-5">
+        <div class="text-center py-5">
+            <div class="mb-3 text-slate-300" style="font-size: 3rem;"><i class="fi fi-rr-id-badge"></i></div>
+            <h5 class="fw-bold text-slate-900 mb-2">No staff accounts yet</h5>
+            <p class="text-slate-500">Create your first staff account to start delegating program management.</p>
+            <a href="{% url 'staff_create' %}" class="btn btn-primary px-4 mt-3">Create Staff Account</a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Modals (Rendered outside table layout to prevent z-index/backdrop locking) -->
+    {% if staff_profiles %}
+        {% for sp in staff_profiles %}
+        <!-- Edit Programs Modal -->
+        <div class="modal fade" id="editPrograms{{ sp.pk }}" tabindex="-1" aria-labelledby="editProgramsLabel{{ sp.pk }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background: var(--surface); border: 1px solid var(--border); color: var(--text);">
+                    <form method="post" action="{% url 'staff_edit_programs' sp.pk %}">
+                        {% csrf_token %}
+                        <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                            <h5 class="modal-title fw-bold" id="editProgramsLabel{{ sp.pk }}">Assign Programs — {{ sp.user.get_full_name|default:sp.user.username }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="list-group list-group-flush">
+                            {% for prog in all_programs %}
+                            <label class="list-group-item bg-transparent d-flex align-items-center gap-3 py-3" style="border-color: var(--border); transition: 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+                                <input class="form-check-input mt-0" type="checkbox" name="programs" value="{{ prog.pk }}"
+                                    {% if prog in sp.assigned_programs.all %}checked{% endif %}>
+                                <span style="color: var(--text);">{{ prog.name }}</span>
+                            </label>
+                            {% endfor %}
+                            </div>
+                        </div>
+                        <div class="modal-footer" style="border-top: 1px solid var(--border);">
+                            <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary px-4">Save Configuration</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.modal').forEach(modal => {
+            document.body.appendChild(modal);
+        });
+    });
+</script>
+{% endblock %}

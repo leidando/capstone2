@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+
+{% block title %}Request Assistance  CSWDO{% endblock %}
+{% block page_title %}Request Assistance{% endblock %}
+{% block breadcrumb %}Services / Request Assistance{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8 col-xl-7">
+            <div class="panel-card gap-32">
+                <div class="panel-header">
+                    <h4 class="fw-bold mb-0">
+                        <i class="fi fi-rr-handshake text-primary me-2"></i> Assistance Request Form
+                    </h4>
+                </div>
+                <div class="p-4 p-md-5">
+                    <div class="alert alert-info d-flex align-items-center gap-3 mb-4">
+                        <i class="fi fi-rr-info fs-4"></i>
+                        <p class="mb-0 small">
+                            Select the program you need assistance with. The required documents will be shown automatically. Upload all necessary documents before submitting your request.
+                        </p>
+                    </div>
+                    
+                    <form method="POST" enctype="multipart/form-data" id="assistance-form" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold mb-2" for="req-program" style="color: var(--text-secondary); font-size: 0.9rem;">Program Needed</label>
+                            {{ form.program }}
+                            {% if form.program.errors %}<div class="text-danger small mt-1">{{ form.program.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <!-- Program Info Panel -->
+                        <div id="program-info-panel" class="mb-4 p-4" style="display:none; background: rgba(59, 130, 246, 0.05); border-left: 4px solid var(--primary); border-radius: 8px;">
+                            <div class="text-uppercase fw-bold mb-2" style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.05em;">About this Program</div>
+                            <p id="program-description" style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; margin-bottom: 16px;"></p>
+                            
+                            <div id="program-eligibility" style="display: none;">
+                                <div class="text-uppercase fw-bold mb-2 mt-3" style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.05em;">Who May Avail</div>
+                                <p id="program-eligibility-text" style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0;"></p>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold mb-2" for="req-barangay" style="color: var(--text-secondary); font-size: 0.9rem;">Your Barangay</label>
+                            {{ form.barangay }}
+                            {% if form.barangay.errors %}<div class="text-danger small mt-1">{{ form.barangay.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold mb-2" for="req-reason" style="color: var(--text-secondary); font-size: 0.9rem;">Reason for Requesting</label>
+                            {{ form.reason }}
+                            <div style="color: var(--text-muted); font-size: 0.75rem; margin-top: 8px;">
+                                <i class="fi fi-rr-comment-info me-1"></i> Please provide a brief explanation of your current situation and why you need this assistance.
+                            </div>
+                            {% if form.reason.errors %}<div class="text-danger small mt-1">{{ form.reason.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <!-- Dynamic Required Documents Section -->
+                        <div id="documents-section" class="mb-4 mt-5" style="display:none;">
+                            <h6 class="text-uppercase fw-bold mb-3 d-flex align-items-center" style="font-size: 0.8rem; color: var(--text); letter-spacing: 0.05em; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                                <i class="fi fi-rr-clipboard-list text-primary me-2"></i> Required Documents
+                            </h6>
+                            <div id="documents-container" class="d-flex flex-column gap-3"></div>
+                        </div>
+
+                        <div class="d-none">
+                            {{ form.document }}
+                        </div>
+
+                        <div class="d-flex gap-3 pt-4" style="border-top: 1px solid var(--border);">
+                            <button type="submit" class="btn btn-primary px-4 py-2 fw-bold" id="btn-submit-request">
+                                <i class="fi fi-rr-paper-plane me-1"></i> Submit Request
+                            </button>
+                            <a href="{% url 'user_dashboard' %}" class="btn btn-outline px-4 py-2">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const programSelect = document.getElementById('req-program');
+        const docsSection = document.getElementById('documents-section');
+        const docsContainer = document.getElementById('documents-container');
+        const infoPanel = document.getElementById('program-info-panel');
+        const descriptionEl = document.getElementById('program-description');
+        const eligibilitySection = document.getElementById('program-eligibility');
+        const eligibilityText = document.getElementById('program-eligibility-text');
+
+        function loadProgramDocuments(programId) {
+            if (!programId) {
+                docsSection.style.display = 'none';
+                infoPanel.style.display = 'none';
+                return;
+            }
+
+            fetch('/api/program/' + programId + '/documents/')
+                .then(function (response) { return response.json(); })
+                .then(function (docs) {
+                    docsContainer.innerHTML = '';
+
+                    if (docs.length === 0) {
+                        docsSection.style.display = 'none';
+                        return;
+                    }
+
+                    var categories = [];
+                    docs.forEach(function (doc) {
+                        var cat = doc.category ? doc.category.trim() : '';
+                        if (cat !== '' && categories.indexOf(cat) === -1) {
+                            categories.push(cat);
+                        }
+                    });
+
+                    function renderDocs(selectedCategory, containerElement) {
+                        containerElement.innerHTML = '';
+
+                        var hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'selected_category';
+                        hiddenInput.value = selectedCategory || '';
+                        containerElement.appendChild(hiddenInput);
+
+                        var visibleDocs = docs.filter(function (doc) {
+                            var cat = doc.category ? doc.category.trim() : '';
+                            return cat === '' || cat === selectedCategory;
+                        });
+
+                        if (visibleDocs.length === 0) {
+                            var emptyMsg = document.createElement('div');
+                            emptyMsg.className = 'text-center p-4 bg-dark bg-opacity-25 rounded-3 border border-dashed border-secondary';
+                            emptyMsg.style.color = 'var(--text-muted)';
+                            emptyMsg.textContent = 'No specific documents required for this selection.';
+                            containerElement.appendChild(emptyMsg);
+                            return;
+                        }
+
+                        visibleDocs.forEach(function (doc) {
+                            var docRow = document.createElement('div');
+                            docRow.style.background = 'var(--bg)';
+                            docRow.style.border = '1px solid var(--border)';
+                            docRow.style.borderRadius = '12px';
+                            docRow.style.padding = '16px';
+                            docRow.className = 'd-flex align-items-start align-items-sm-center flex-column flex-sm-row gap-3';
+
+                            var left = document.createElement('div');
+                            left.className = 'flex-grow-1';
+
+                            var nameEl = document.createElement('div');
+                            nameEl.style.fontWeight = '700';
+                            nameEl.style.color = 'var(--text)';
+                            nameEl.style.fontSize = '0.9rem';
+                            nameEl.textContent = doc.name;
+                            left.appendChild(nameEl);
+
+                            if (doc.description) {
+                                var descEl = document.createElement('div');
+                                descEl.style.color = 'var(--text-muted)';
+                                descEl.style.fontSize = '0.75rem';
+                                descEl.style.marginTop = '4px';
+                                descEl.textContent = doc.description;
+                                left.appendChild(descEl);
+                            }
+
+                            var right = document.createElement('div');
+                            right.className = 'flex-shrink-0 w-100';
+                            right.style.maxWidth = '280px';
+
+                            var fileInput = document.createElement('input');
+                            fileInput.type = 'file';
+                            fileInput.name = 'doc_' + doc.id;
+                            fileInput.id = 'doc_' + doc.id;
+                            fileInput.className = 'form-control form-control-sm';
+                            fileInput.style.background = 'var(--surface)';
+                            fileInput.style.color = 'var(--text)';
+                            fileInput.style.borderColor = 'var(--border)';
+                            fileInput.accept = '.pdf,.jpg,.jpeg,.png,.doc,.docx';
+                            right.appendChild(fileInput);
+
+                            if (doc.is_required) {
+                                var reqBadge = document.createElement('div');
+                                reqBadge.style.color = 'var(--danger)';
+                                reqBadge.style.fontWeight = '700';
+                                reqBadge.style.fontSize = '0.7rem';
+                                reqBadge.style.marginTop = '6px';
+                                reqBadge.innerHTML = '<i class="fi fi-rr-exclamation me-1"></i> Required Document';
+                                right.appendChild(reqBadge);
+                            }
+
+                            docRow.appendChild(left);
+                            docRow.appendChild(right);
+                            containerElement.appendChild(docRow);
+                        });
+                    }
+
+                    if (categories.length > 0) {
+                        var pickerGroup = document.createElement('div');
+                        pickerGroup.style.background = 'var(--surface)';
+                        pickerGroup.style.borderLeft = '4px solid var(--primary)';
+                        pickerGroup.style.padding = '20px';
+                        pickerGroup.style.borderRadius = '8px';
+                        pickerGroup.className = 'mb-4';
+
+                        var pickerLabel = document.createElement('label');
+                        pickerLabel.style.color = 'var(--text)';
+                        pickerLabel.style.fontWeight = '700';
+                        pickerLabel.style.fontSize = '0.85rem';
+                        pickerLabel.className = 'form-label mb-2';
+                        pickerLabel.textContent = 'Select Sub-Category / Specific Assistance Needed:';
+                        pickerGroup.appendChild(pickerLabel);
+
+                        var pickerSelect = document.createElement('select');
+                        pickerSelect.className = 'form-select fw-bold';
+                        pickerSelect.style.background = 'var(--bg)';
+                        pickerSelect.style.color = 'var(--text)';
+                        pickerSelect.style.borderColor = 'var(--border)';
+
+                        var defaultOpt = document.createElement('option');
+                        defaultOpt.value = '';
+                        defaultOpt.textContent = '-- Choose from available categories --';
+                        defaultOpt.disabled = true;
+                        defaultOpt.selected = true;
+                        pickerSelect.appendChild(defaultOpt);
+
+                        categories.forEach(function (cat) {
+                            var opt = document.createElement('option');
+                            opt.value = cat;
+                            opt.textContent = cat;
+                            pickerSelect.appendChild(opt);
+                        });
+
+                        pickerGroup.appendChild(pickerSelect);
+
+                        var docsWrapper = document.createElement('div');
+                        docsWrapper.id = 'dynamic-docs-wrapper';
+                        docsWrapper.className = 'd-flex flex-column gap-3';
+
+                        docsContainer.appendChild(pickerGroup);
+                        docsContainer.appendChild(docsWrapper);
+
+                        pickerSelect.addEventListener('change', function () {
+                            renderDocs(this.value, docsWrapper);
+                        });
+                    } else {
+                        renderDocs('', docsContainer);
+                    }
+
+                    docsSection.style.display = 'block';
+                });
+        }
+
+        if (programSelect) {
+            programSelect.addEventListener('change', function () {
+                loadProgramDocuments(this.value);
+            });
+            if (programSelect.value) {
+                loadProgramDocuments(programSelect.value);
+            }
+        }
+    });
+</script>
+{% endblock %}

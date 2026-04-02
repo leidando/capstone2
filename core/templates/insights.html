@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}System Insights  CSWDO{% endblock %}
+{% block page_title %}System Insights & Recommendations{% endblock %}
+{% block breadcrumb %}Admin / Insights{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="h4 fw-bold mb-1 text-slate-900">Automated Analysis Report</h2>
+        <span class="text-slate-500" style="font-size: 0.875rem;">The system has detected {{ total_insights }} issues across the municipality.</span>
+    </div>
+</div>
+
+<!-- Vulnerability Hotspots -->
+<div class="card mb-5" x-data="{ page: 1, totalPages: Math.ceil({{ vulnerability_hotspots|length }} / 5) }">
+    <div class="card-header border-0 pt-4 px-4 pb-3" style="background: rgba(239, 68, 68, 0.03); border-bottom: 1px solid rgba(239, 68, 68, 0.1) !important;">
+        <div>
+            <h5 class="card-title fw-bold mb-1" style="color: var(--danger);">
+                <i class="fi fi-rr-warning me-2"></i> Vulnerability Hotspots
+            </h5>
+            <span class="text-slate-500" style="font-size: 0.8125rem;">Barangays with high average vulnerability scores requiring urgent attention.</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        {% if vulnerability_hotspots %}
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4" style="width: 20%;">Barangay</th>
+                    <th style="width: 12%;">Avg Score</th>
+                    <th style="width: 12%;">High-Risk</th>
+                    <th style="width: 56%;">Recommendation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in vulnerability_hotspots %}
+                <tr x-show="page === Math.ceil({{ forloop.counter }} / 5)" {% if forloop.counter > 5 %}style="display: none;"{% endif %} x-transition.opacity>
+                    <td class="ps-4"><strong class="text-slate-900">{{ item.barangay }}</strong></td>
+                    <td>
+                        <span class="badge {% if item.value >= 60 %}bg-danger{% else %}bg-warning{% endif %} text-white">
+                            {{ item.value }}
+                        </span>
+                    </td>
+                    <td class="text-danger fw-bold">{{ item.high_risk }}</td>
+                    <td class="text-slate-600" style="font-size: 0.8125rem;">{{ item.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if vulnerability_hotspots|length > 5 %}
+        <div class="p-3 d-flex justify-content-between align-items-center" style="background: var(--bg); border-top: 1px solid var(--border);">
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page > 1) page--" :disabled="page === 1">
+                <i class="fi fi-rr-angle-small-left pe-1"></i> Prev
+            </button>
+            <span class="text-muted" style="font-size: 0.85rem;">Page <span x-text="page"></span> of <span x-text="totalPages"></span></span>
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page < totalPages) page++" :disabled="page === totalPages">
+                Next <i class="fi fi-rr-angle-small-right ps-1"></i>
+            </button>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="p-5 text-center" style="color: var(--text-muted);">
+            <i class="fi fi-rr-check-circle display-6 opacity-25 mb-3 d-block"></i>
+            <span>No vulnerability hotspots detected.</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Service Gaps -->
+<div class="card mb-5" x-data="{ page: 1, totalPages: Math.ceil({{ service_gaps|length }} / 5) }">
+    <div class="card-header border-0 pt-4 px-4 pb-3" style="background: rgba(245, 158, 11, 0.03); border-bottom: 1px solid rgba(245, 158, 11, 0.1) !important;">
+        <div>
+            <h5 class="card-title fw-bold mb-1" style="color: var(--warning);">
+                <i class="fi fi-rr-stats me-2"></i> Service Gap Detection
+            </h5>
+            <span class="text-slate-500" style="font-size: 0.8125rem;">Barangays where beneficiaries significantly outnumber approved services.</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            {% if service_gaps %}
+            <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4" style="width: 20%;">Barangay</th>
+                    <th style="width: 12%;">Gap Index</th>
+                    <th style="width: 12%;">Beneficiaries</th>
+                    <th style="width: 56%;">Recommendation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in service_gaps %}
+                <tr x-show="page === Math.ceil({{ forloop.counter }} / 5)" {% if forloop.counter > 5 %}style="display: none;"{% endif %} x-transition.opacity>
+                    <td class="ps-4"><strong class="text-slate-900">{{ item.barangay }}</strong></td>
+                    <td>
+                        <span class="badge {% if item.value > 5 %}bg-danger{% else %}bg-warning{% endif %} text-white">
+                            {{ item.value }}
+                        </span>
+                    </td>
+                    <td class="text-slate-500">{{ item.total_bens }}</td>
+                    <td class="text-slate-600" style="font-size: 0.8125rem;">{{ item.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if service_gaps|length > 5 %}
+        <div class="p-3 d-flex justify-content-between align-items-center" style="background: var(--bg); border-top: 1px solid var(--border);">
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page > 1) page--" :disabled="page === 1">
+                <i class="fi fi-rr-angle-small-left pe-1"></i> Prev
+            </button>
+            <span class="text-muted" style="font-size: 0.85rem;">Page <span x-text="page"></span> of <span x-text="totalPages"></span></span>
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page < totalPages) page++" :disabled="page === totalPages">
+                Next <i class="fi fi-rr-angle-small-right ps-1"></i>
+            </button>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="p-5 text-center" style="color: var(--text-muted);">
+            <i class="fi fi-rr-check-circle display-6 opacity-25 mb-3 d-block"></i>
+            <span>No significant service gaps detected.</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Elderly Vulnerability -->
+{% if elderly_vulnerability %}
+<div class="panel-card gap-32" x-data="{ page: 1, totalPages: Math.ceil({{ elderly_vulnerability|length }} / 5) }">
+    <div class="panel-header" style="background: rgba(6, 182, 212, 0.05); border-bottom: 1px solid rgba(6, 182, 212, 0.2);">
+        <div>
+            <h5 class="fw-bold mb-0" style="color: var(--info);">
+                <i class="fi fi-rr-user me-2"></i> Elderly Vulnerability Alert
+            </h5>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">Barangays with high concentrations of vulnerable elderly residents (age 60+).</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table-dark-custom">
+            <thead>
+                <tr>
+                    <th class="ps-4" style="width: 25%;">Barangay</th>
+                    <th style="width: 15%;">Elderly High-Risk</th>
+                    <th style="width: 60%;">Recommendation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in elderly_vulnerability %}
+                <tr x-show="page === Math.ceil({{ forloop.counter }} / 5)" {% if forloop.counter > 5 %}style="display: none;"{% endif %} x-transition.opacity>
+                    <td class="ps-4"><strong style="color: var(--text);">{{ item.barangay }}</strong></td>
+                    <td><span class="badge-vuln badge-danger">{{ item.value }}</span></td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">{{ item.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if elderly_vulnerability|length > 5 %}
+        <div class="p-3 d-flex justify-content-between align-items-center" style="background: var(--bg); border-top: 1px solid var(--border);">
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page > 1) page--" :disabled="page === 1">
+                <i class="fi fi-rr-angle-small-left pe-1"></i> Prev
+            </button>
+            <span class="text-muted" style="font-size: 0.85rem;">Page <span x-text="page"></span> of <span x-text="totalPages"></span></span>
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page < totalPages) page++" :disabled="page === totalPages">
+                Next <i class="fi fi-rr-angle-small-right ps-1"></i>
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Overloaded Programs -->
+{% if overloaded_programs %}
+<div class="panel-card gap-32" x-data="{ page: 1, totalPages: Math.ceil({{ overloaded_programs|length }} / 5) }">
+    <div class="panel-header" style="background: rgba(245, 158, 11, 0.05); border-bottom: 1px solid rgba(245, 158, 11, 0.2);">
+        <div>
+            <h5 class="fw-bold mb-0" style="color: var(--warning);">
+                <i class="fi fi-rr-folder me-2"></i> Overloaded Programs
+            </h5>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">Programs with a disproportionately high number of pending requests.</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table-dark-custom">
+            <thead>
+                <tr>
+                    <th class="ps-4" style="width: 30%;">Program</th>
+                    <th style="width: 12%;">Pending</th>
+                    <th style="width: 58%;">Recommendation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in overloaded_programs %}
+                <tr x-show="page === Math.ceil({{ forloop.counter }} / 5)" {% if forloop.counter > 5 %}style="display: none;"{% endif %} x-transition.opacity>
+                    <td class="ps-4"><strong style="color: var(--text);">{{ item.program }}</strong></td>
+                    <td><span class="badge-vuln badge-warning">{{ item.value }}</span></td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">{{ item.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if overloaded_programs|length > 5 %}
+        <div class="p-3 d-flex justify-content-between align-items-center" style="background: var(--bg); border-top: 1px solid var(--border);">
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page > 1) page--" :disabled="page === 1">
+                <i class="fi fi-rr-angle-small-left pe-1"></i> Prev
+            </button>
+            <span class="text-muted" style="font-size: 0.85rem;">Page <span x-text="page"></span> of <span x-text="totalPages"></span></span>
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page < totalPages) page++" :disabled="page === totalPages">
+                Next <i class="fi fi-rr-angle-small-right ps-1"></i>
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- High Concentration -->
+<div class="panel-card gap-32" x-data="{ page: 1, totalPages: Math.ceil({{ high_concentration|length }} / 5) }">
+    <div class="panel-header" style="background: rgba(245, 158, 11, 0.05); border-bottom: 1px solid rgba(245, 158, 11, 0.2);">
+        <div>
+            <h5 class="fw-bold mb-0" style="color: var(--warning);">
+                <i class="fi fi-rr-warning me-2"></i> High Concentration of Beneficiaries
+            </h5>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">Barangays exceeding the expected beneficiary threshold.</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        {% if high_concentration %}
+        <table class="table-dark-custom">
+            <thead>
+                <tr>
+                    <th class="ps-4" style="width: 25%;">Barangay</th>
+                    <th style="width: 15%;">Total Beneficiaries</th>
+                    <th style="width: 60%;">Recommendation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in high_concentration %}
+                <tr x-show="page === Math.ceil({{ forloop.counter }} / 5)" {% if forloop.counter > 5 %}style="display: none;"{% endif %} x-transition.opacity>
+                    <td class="ps-4"><strong style="color: var(--text);">{{ item.barangay }}</strong></td>
+                    <td><span class="badge-vuln badge-warning">{{ item.value }}</span></td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">{{ item.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if high_concentration|length > 5 %}
+        <div class="p-3 d-flex justify-content-between align-items-center" style="background: var(--bg); border-top: 1px solid var(--border);">
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page > 1) page--" :disabled="page === 1">
+                <i class="fi fi-rr-angle-small-left pe-1"></i> Prev
+            </button>
+            <span class="text-muted" style="font-size: 0.85rem;">Page <span x-text="page"></span> of <span x-text="totalPages"></span></span>
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page < totalPages) page++" :disabled="page === totalPages">
+                Next <i class="fi fi-rr-angle-small-right ps-1"></i>
+            </button>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="p-5 text-center" style="color: var(--text-muted);">
+            <i class="fi fi-rr-check-circle display-6 opacity-25 mb-3 d-block"></i>
+            <span>No high concentration issues detected.</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Program Gaps -->
+<div class="panel-card gap-32" x-data="{ page: 1, totalPages: Math.ceil({{ program_gaps|length }} / 5) }">
+    <div class="panel-header" style="background: rgba(239, 68, 68, 0.05); border-bottom: 1px solid rgba(239, 68, 68, 0.2);">
+        <div>
+            <h5 class="fw-bold mb-0" style="color: var(--danger);">
+                <i class="fi fi-rr-info me-2"></i> Program Gaps Detected
+            </h5>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">Barangays with overall high beneficiaries but critically low participation in specific programs.</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        {% if program_gaps %}
+        <table class="table-dark-custom">
+            <thead>
+                <tr>
+                    <th class="ps-4" style="width: 20%;">Barangay</th>
+                    <th style="width: 30%;">Underserved Program</th>
+                    <th style="width: 10%;">Beneficiaries</th>
+                    <th style="width: 40%;">Analysis</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in program_gaps %}
+                <tr x-show="page === Math.ceil({{ forloop.counter }} / 5)" {% if forloop.counter > 5 %}style="display: none;"{% endif %} x-transition.opacity>
+                    <td class="ps-4"><strong style="color: var(--text);">{{ item.barangay }}</strong></td>
+                    <td class="fw-medium" style="color: var(--text);">{{ item.program }}</td>
+                    <td><span class="badge-vuln badge-danger">{{ item.value }}</span></td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">{{ item.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if program_gaps|length > 5 %}
+        <div class="p-3 d-flex justify-content-between align-items-center" style="background: var(--bg); border-top: 1px solid var(--border);">
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page > 1) page--" :disabled="page === 1">
+                <i class="fi fi-rr-angle-small-left pe-1"></i> Prev
+            </button>
+            <span class="text-muted" style="font-size: 0.85rem;">Page <span x-text="page"></span> of <span x-text="totalPages"></span></span>
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page < totalPages) page++" :disabled="page === totalPages">
+                Next <i class="fi fi-rr-angle-small-right ps-1"></i>
+            </button>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="p-5 text-center" style="color: var(--text-muted);">
+            <i class="fi fi-rr-check-circle display-6 opacity-25 mb-3 d-block"></i>
+            <span>No critical program gaps detected.</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Population Gaps -->
+<div class="panel-card gap-32" x-data="{ page: 1, totalPages: Math.ceil({{ population_gaps|length }} / 5) }">
+    <div class="panel-header" style="background: rgba(59, 130, 246, 0.05); border-bottom: 1px solid rgba(59, 130, 246, 0.2);">
+        <div>
+            <h5 class="fw-bold mb-0" style="color: var(--primary);">
+                <i class="fi fi-rr-stats me-2"></i> Population Discrepancy
+            </h5>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">Barangays with fewer total beneficiaries than expected based on population size.</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        {% if population_gaps %}
+        <table class="table-dark-custom">
+            <thead>
+                <tr>
+                    <th class="ps-4" style="width: 25%;">Barangay</th>
+                    <th style="width: 15%;">Population</th>
+                    <th style="width: 15%;">Estimated Gap</th>
+                    <th style="width: 45%;">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in population_gaps %}
+                <tr x-show="page === Math.ceil({{ forloop.counter }} / 5)" {% if forloop.counter > 5 %}style="display: none;"{% endif %} x-transition.opacity>
+                    <td class="ps-4"><strong style="color: var(--text);">{{ item.barangay }}</strong></td>
+                    <td style="color: var(--text-muted); font-weight: 500;">{{ item.population }}</td>
+                    <td><span class="badge-vuln badge-info">{{ item.value }}</span></td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">{{ item.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if population_gaps|length > 5 %}
+        <div class="p-3 d-flex justify-content-between align-items-center" style="background: var(--bg); border-top: 1px solid var(--border);">
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page > 1) page--" :disabled="page === 1">
+                <i class="fi fi-rr-angle-small-left pe-1"></i> Prev
+            </button>
+            <span class="text-muted" style="font-size: 0.85rem;">Page <span x-text="page"></span> of <span x-text="totalPages"></span></span>
+            <button class="btn btn-outline btn-sm rounded-pill px-3" @click="if(page < totalPages) page++" :disabled="page === totalPages">
+                Next <i class="fi fi-rr-angle-small-right ps-1"></i>
+            </button>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="p-5 text-center" style="color: var(--text-muted);">
+            <i class="fi fi-rr-check-circle display-6 opacity-25 mb-3 d-block"></i>
+            <span>No population discrepancies detected.</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

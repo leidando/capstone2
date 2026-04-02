@@ -1,0 +1,236 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" id="html-root">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CSWDO System{% endblock %}</title>
+    <meta name="description" content="CSWDO Beneficiary Management System  Tayabas City">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Flaticon UIcons -->
+    <link rel='stylesheet'
+        href='https://cdn-uicons.flaticon.com/2.1.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Tom Select -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css">
+    <!-- Custom CSS (loaded AFTER Bootstrap to override) -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=3.2">
+    {% block extra_head %}{% endblock %}
+    <!-- Theme Script Erased (Enforcing clean light theme) -->
+</head>
+
+<body x-data="{ sidebarOpen: false }">
+    {% block body %}
+    <div class="layout">
+        <!-- Sidebar Overlay (mobile) -->
+        <div class="sidebar-overlay" :class="{ 'show': sidebarOpen }" @click="sidebarOpen = false" id="sidebarOverlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" :class="{ 'open': sidebarOpen }" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-icon">
+                    <img src="{% static 'images/cswdo_logo.png' %}" alt="CSWDO Logo"
+                        style="width: 100%; height: 100%; object-fit: contain;">
+                </div>
+                <div>
+                    <h1>CSWDO</h1>
+                    <small>Tayabas City</small>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                {% if user.is_authenticated and user.profile.is_admin %}
+                <!-- ═══ Admin Navigation ═══ -->
+                <div class="sidebar-label">Dashboard</div>
+                <a href="{% url 'admin_dashboard' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}"
+                    id="nav-admin-dashboard">
+                    <span class="icon"><i class="fi fi-rr-stats"></i></span> Analytics Dashboard
+                </a>
+
+                <div class="sidebar-label">Management</div>
+                <a href="{% url 'beneficiary_list' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'beneficiary_list' or request.resolver_match.url_name == 'beneficiary_edit' %}active{% endif %}"
+                    id="nav-beneficiaries">
+                    <span class="icon"><i class="fi fi-rr-users"></i></span> Beneficiaries
+                </a>
+                <a href="{% url 'request_list' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'request_list' %}active{% endif %}"
+                    id="nav-requests">
+                    <span class="icon"><i class="fi fi-rr-clipboard-list"></i></span> Requests
+                </a>
+                <a href="{% url 'program_list' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'program_list' or request.resolver_match.url_name == 'program_add' or request.resolver_match.url_name == 'program_edit' %}active{% endif %}"
+                    id="nav-programs">
+                    <span class="icon"><i class="fi fi-rr-folder"></i></span> Programs
+                </a>
+                <a href="{% url 'staff_management' %}"
+                    class="sidebar-link {% if 'staff' in request.resolver_match.url_name %}active{% endif %}"
+                    id="nav-staff">
+                    <span class="icon"><i class="fi fi-rr-id-badge"></i></span> Staff Management
+                </a>
+
+                <div class="sidebar-label">Analytics</div>
+                <a href="{% url 'admin_insights' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'admin_insights' %}active{% endif %}"
+                    id="nav-insights">
+                    <span class="icon"><i class="fi fi-rr-bulb"></i></span> System Insights
+                </a>
+                <a href="{% url 'map' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'map' %}active{% endif %}"
+                    id="nav-map">
+                    <span class="icon"><i class="fi fi-rr-map"></i></span> Geospatial Map
+                </a>
+
+
+
+
+                {% elif user.is_authenticated and user.profile.is_staff_role %}
+                <!-- ═══ Staff Navigation ═══ -->
+                <div class="sidebar-label">Dashboard</div>
+                <a href="{% url 'staff_dashboard' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'staff_dashboard' %}active{% endif %}"
+                    id="nav-staff-dashboard">
+                    <span class="icon"><i class="fi fi-rr-stats"></i></span> Staff Dashboard
+                </a>
+
+                <div class="sidebar-label">View</div>
+                <a href="{% url 'map' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'map' %}active{% endif %}"
+                    id="nav-staff-map">
+                    <span class="icon"><i class="fi fi-rr-map"></i></span> Barangay Map
+                </a>
+
+                {% else %}
+                <!-- ═══ User Navigation ═══ -->
+                <div class="sidebar-label">My Dashboard</div>
+                <a href="{% url 'user_dashboard' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}"
+                    id="nav-user-dashboard">
+                    <span class="icon"><i class="fi fi-rr-home"></i></span> Dashboard
+                </a>
+
+                <div class="sidebar-label">Services</div>
+                <a href="{% url 'submit_beneficiary' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'submit_beneficiary' %}active{% endif %}"
+                    id="nav-submit-beneficiary">
+                    <span class="icon"><i class="fi fi-rr-edit"></i></span> Submit Information
+                </a>
+                <a href="{% url 'request_assistance' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'request_assistance' %}active{% endif %}"
+                    id="nav-request-assistance">
+                    <span class="icon"><i class="fi fi-rr-handshake"></i></span> Request Assistance
+                </a>
+
+                <div class="sidebar-label">View</div>
+                <a href="{% url 'map' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'map' %}active{% endif %}"
+                    id="nav-user-map">
+                    <span class="icon"><i class="fi fi-rr-map"></i></span> Barangay Map
+                </a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-avatar">{{ user.first_name.0 }}{{ user.last_name.0 }}</div>
+                    <div class="sidebar-user-info">
+                        <div class="name">{{ user.get_full_name|default:user.username }}</div>
+                        <div class="role">{% if user.profile.is_admin %}Administrator{% elif user.profile.is_staff_role %}Staff{% else %}Citizen{% endif %}</div>
+                    </div>
+                </div>
+                <a href="{% url 'logout' %}" class="sidebar-link" style="margin-top: 12px;" id="nav-logout">
+                    <span class="icon"><i class="fi fi-rr-sign-out-alt"></i></span> Sign Out
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <main class="main">
+            <header class="topbar">
+                <div>
+                    <button class="mobile-toggle" @click="sidebarOpen = !sidebarOpen" id="mobile-menu-btn">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <span class="topbar-title">{% block page_title %}Dashboard{% endblock %}</span>
+                </div>
+                <div class="topbar-actions">
+                    <span class="topbar-breadcrumb">{% block breadcrumb %}{% endblock %}</span>
+
+                    {% if not user.profile.is_admin and not user.profile.is_staff_role %}
+                    <!-- Google Translate (user side only) -->
+                    <div id="google_translate_element"></div>
+                    {% endif %}
+                </div>
+            </header>
+
+            <div class="content animate-fade">
+                <!-- Flash Messages -->
+                {% if messages %}
+                {% for msg in messages %}
+                <div class="alert alert-{{ msg.tags }}" id="alert-{{ forloop.counter }}">
+                    {{ msg }}
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    {% endblock %}
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <!-- Tom Select -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script>
+        // Auto-dismiss alerts
+        document.querySelectorAll('.alert').forEach(el => {
+            setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(-8px)'; setTimeout(() => el.remove(), 300); }, 5000);
+        });
+        // Activate Tom Select on all barangay & program selects
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('select[id*="barangay"], select[id*="program"], select.ts-select').forEach(function (el) {
+                if (!el.tomselect) {
+                    new TomSelect(el, {
+                        create: false,
+                        sortField: { field: 'text', direction: 'asc' },
+                        placeholder: el.getAttribute('data-placeholder') || 'Search or select',
+                    });
+                }
+            });
+        });
+    </script>
+
+    <!-- Google Translate API (user side) -->
+    {% if not user.profile.is_admin and not user.profile.is_staff_role %}
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,tl',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false,
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript"
+        src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    {% endif %}
+    {% block extra_scripts %}{% endblock %}
+</body>
+
+</html>

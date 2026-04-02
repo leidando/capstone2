@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Staff Account  CSWDO{% endblock %}
+{% block page_title %}Create Staff Account{% endblock %}
+{% block breadcrumb %}Admin / Staff / Create{% endblock %}
+
+{% block content %}
+<div class="position-relative" style="z-index: 1;">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="panel-card gap-32">
+                <div class="panel-header">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fi fi-rr-id-badge text-primary me-2"></i> New Staff Account
+                    </h5>
+                </div>
+                <div class="p-4 p-md-5">
+                    <form method="post" id="staff-create-form" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" style="color: var(--text-secondary); font-size: 0.9rem;">First Name</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}<div class="text-danger small mt-1">{{ form.first_name.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" style="color: var(--text-secondary); font-size: 0.9rem;">Last Name</label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}<div class="text-danger small mt-1">{{ form.last_name.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" style="color: var(--text-secondary); font-size: 0.9rem;">Username</label>
+                                {{ form.username }}
+                                {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" style="color: var(--text-secondary); font-size: 0.9rem;">Email Address</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold mb-2" style="color: var(--text-secondary); font-size: 0.9rem;">Initial Password</label>
+                            {{ form.password }}
+                            {% if form.password.errors %}<div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label fw-bold mb-2" style="color: var(--text); font-size: 1rem;">Assign Programs</label>
+                            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 16px;">Select the specific programs this staff member will be authorized to manage.</p>
+                            
+                            <div class="p-4 border rounded-3" style="background: var(--surface); border-color: var(--border); max-height: 300px; overflow-y: auto;">
+                                {% for checkbox in form.assigned_programs %}
+                                <label class="form-check d-flex align-items-center gap-3 py-2 mb-0" style="cursor: pointer; transition: 0.2s;">
+                                    {{ checkbox.tag }}
+                                    <span class="form-check-label" style="color: var(--text-secondary); font-size: 0.9rem;">{{ checkbox.choice_label }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3 pt-4" style="border-top: 1px solid var(--border);">
+                            <button type="submit" class="btn btn-primary px-4 py-2 fw-bold" id="btn-submit-staff">
+                                <i class="fi fi-rr-check me-1"></i> Create Staff Account
+                            </button>
+                            <a href="{% url 'staff_management' %}" class="btn btn-outline px-4 py-2">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

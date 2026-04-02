@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Beneficiary  CSWDO{% endblock %}
+{% block page_title %}Edit Beneficiary{% endblock %}
+{% block breadcrumb %}Admin / Beneficiaries / Edit{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8 col-xl-7">
+            <div class="panel-card gap-32">
+                <div class="panel-header">
+                    <h4 class="fw-bold mb-0">
+                        <i class="fi fi-rr-pencil text-primary me-2"></i> Editing: <span style="color: var(--text);">{{ beneficiary.full_name }}</span>
+                    </h4>
+                </div>
+                <div class="p-4 p-md-5">
+                    <form method="POST" id="edit-beneficiary-form" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold mb-2" for="admin-ben-fullname" style="color: var(--text-secondary); font-size: 0.9rem;">Full Name</label>
+                            {{ form.full_name }}
+                            {% if form.full_name.errors %}<div class="text-danger small mt-1">{{ form.full_name.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" for="admin-ben-age" style="color: var(--text-secondary); font-size: 0.9rem;">Age</label>
+                                {{ form.age }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" for="admin-ben-gender" style="color: var(--text-secondary); font-size: 0.9rem;">Gender</label>
+                                {{ form.gender }}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold mb-2" for="admin-ben-barangay" style="color: var(--text-secondary); font-size: 0.9rem;">Barangay</label>
+                            {{ form.barangay }}
+                        </div>
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" for="admin-ben-income" style="color: var(--text-secondary); font-size: 0.9rem;">Household Income</label>
+                                {{ form.household_income }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold mb-2" for="admin-ben-family" style="color: var(--text-secondary); font-size: 0.9rem;">Family Members</label>
+                                {{ form.family_members }}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="p-4 border rounded-3" style="background: var(--surface); border-color: var(--border);">
+                                <label class="form-label fw-bold mb-3" for="admin-ben-status" style="color: var(--text); font-size: 1rem;">Administrative Controls</label>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label mb-2 fw-semibold" style="color: var(--text-secondary); font-size: 0.85rem;">Profile Approval Status</label>
+                                    {{ form.status }}
+                                </div>
+                                
+                                <div id="admin-note-group">
+                                    <label class="form-label mb-2 fw-semibold" for="admin-ben-note" style="color: var(--text-secondary); font-size: 0.85rem;">Admin Note (Rejection Reason)</label>
+                                    {{ form.admin_note }}
+                                    <div style="color: var(--text-muted); font-size: 0.75rem; margin-top: 8px;">
+                                        <i class="fi fi-rr-info text-primary me-1"></i> This note is visible to the citizen if their profile is rejected.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3 pt-4" style="border-top: 1px solid var(--border);">
+                            <button type="submit" class="btn btn-primary px-4 py-2 fw-bold" id="btn-save-beneficiary">
+                                <i class="fi fi-rr-disk me-1"></i> Save Changes
+                            </button>
+                            <a href="{% url 'beneficiary_list' %}" class="btn btn-outline px-4 py-2">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

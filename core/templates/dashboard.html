@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <h1>Real-Time Analytics Dashboard</h1>
+    <p>Total Beneficiaries: {{ total }}</p>
+
+    <canvas id="programChart" width="400" height="200"></canvas>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const labels = [
+                {% for item in program_data %}
+            "{{ item.program }}"{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    ];
+
+        const values = [
+            {% for item in program_data %}
+        { { item.count } } {% if not forloop.last %}, {% endif %}
+        {% endfor %}
+        ];
+
+        const data = {
+            labels: labels,
+            datasets: [{
+                label: 'Beneficiaries per Program',
+                data: values
+            }]
+        };
+
+        const ctx = document.getElementById('programChart').getContext('2d');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: data
+        });
+
+});
+    </script>
+
+    <a href="/map/">View Geospatial Map</a>
+
+</body>
+
+</html>

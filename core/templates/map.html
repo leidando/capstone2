@@ -1,0 +1,455 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Geospatial Map  CSWDO{% endblock %}
+{% block page_title %}Geospatial Vulnerability Map{% endblock %}
+{% block breadcrumb %}{% if user.profile.is_admin %}Admin{% elif user.profile.is_staff_role %}Staff{% else %}View{% endif %} / Map{% endblock %}
+
+{% block extra_head %}
+<style>
+    .map-wrapper {
+        display: flex;
+        gap: 0;
+        height: calc(100vh - 140px);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--border);
+    }
+
+    #map {
+        flex: 1;
+        height: 100%;
+        background: var(--bg);
+    }
+
+    .map-sidebar {
+        width: 380px;
+        background: var(--surface);
+        display: flex;
+        flex-direction: column;
+        border-left: 1px solid var(--border);
+        transition: width 0.3s ease;
+        overflow: hidden;
+    }
+
+    .map-sidebar.collapsed {
+        width: 0;
+    }
+
+    .sidebar-panel-header {
+        padding: 24px 20px 16px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--info) 100%);
+        color: #fff;
+    }
+
+    .sidebar-panel-header h3 {
+        margin: 0 0 4px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .sidebar-panel-header p {
+        margin: 0;
+        font-size: 0.8rem;
+        opacity: 0.9;
+        color: #fff;
+    }
+
+    .sidebar-panel-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+        background: var(--surface);
+    }
+
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .stat-row:last-child {
+        border-bottom: none;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .stat-value {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .prog-bar-wrap {
+        margin: 12px 0;
+    }
+
+    .prog-bar-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+    }
+
+    .prog-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: var(--bg);
+        overflow: hidden;
+    }
+
+    .prog-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--info));
+    }
+
+    .gap-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-top: 12px;
+        width: 100%;
+    }
+
+    .gap-badge.danger { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .gap-badge.warning { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.2); }
+    .gap-badge.success { background: rgba(34, 197, 94, 0.15); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.2); }
+
+    .insight-chip {
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        margin-top: 12px;
+        border-left: 4px solid;
+    }
+
+    .insight-chip.info {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--text-secondary);
+        border-color: var(--primary);
+    }
+
+    .vuln-person {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;
+    }
+    .vuln-person:last-child { border-bottom: none; }
+
+    /* Map controls bar */
+    .map-controls {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+        z-index: 10001;
+    }
+
+    /* Legend */
+    .map-legend {
+        background: var(--surface) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text) !important;
+        border-radius: 10px;
+        padding: 12px 16px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .legend-title {
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--text);
+        font-size: 0.85rem;
+    }
+
+    .legend-item {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+    }
+
+    /* Tooltip Customization */
+    .leaflet-tooltip-custom {
+        background: var(--surface) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text) !important;
+        box-shadow: var(--shadow-md) !important;
+        border-radius: 6px !important;
+        padding: 8px 12px !important;
+        font-size: 0.85rem !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="map-controls">
+    <button class="btn btn-outline btn-sm px-3" onclick="togglePolygons()" id="btn-toggle-polygons"><i class="fi fi-rr-map me-1"></i> Toggle Layers</button>
+    <button class="btn btn-danger btn-sm px-3" onclick="closeSidebarPanel()" id="btn-close-panel" style="display:none;">
+        <i class="fi fi-rr-cross me-1"></i> Close Sidebar</button>
+
+    <div class="d-flex align-items-center gap-2 ms-auto">
+        <label style="font-size:0.85rem; color:var(--text-muted); white-space:nowrap;">Program Filter:</label>
+        <div style="min-width: 240px;">
+            <select id="program-filter-select" class="form-select" onchange="applyProgramFilter(this.value)">
+                <option value="">All Active Programs</option>
+                {% for prog in programs %}
+                <option value="{{ prog }}">{{ prog }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <span style="color:var(--text-muted); font-size:0.8rem; white-space:nowrap;" class="ms-2">
+        <i class="fi fi-rr-marker text-primary me-1"></i> Tayabas City, Quezon
+    </span>
+</div>
+
+<div class="map-wrapper">
+    <div id="map" style="position:relative;"></div>
+    <!-- Info Sidebar -->
+    <div class="map-sidebar collapsed" id="map-sidebar">
+        <div class="sidebar-panel-header">
+            <h3 id="sidebar-brgy-name"></h3>
+            <p class="brgy-pop-label" id="sidebar-brgy-pop"></p>
+            <p id="sidebar-brgy-sub">LGU Decision Support Intelligence</p>
+        </div>
+        <div class="sidebar-panel-body" id="sidebar-body">
+            <div class="empty-state">
+                <div class="icon" style="font-size: 3rem; color: var(--border); margin-bottom: 20px;"><i class="fi fi-rr-map"></i></div>
+                <p style="color: var(--text-muted);">Select a barangay on the map to view real-time beneficiary analytics and service gap insights.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Initialize Map with dark tiles if preferred or standard
+    var map = L.map('map', { zoomControl: true }).setView([14.035, 121.59], 11);
+
+    // Using CartoDB Light All for a clean view while supporting dynamic data layers
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    }).addTo(map);
+
+    var geojsonLayer = null;
+    var polygonsVisible = true;
+    var allData = [];
+    var activeFilter = '';
+
+    // Color based on Service Gap Index or Vulnerability
+    function getPolygonColor(b) {
+        var sgi = b.service_gap_index || 0;
+        var avgVuln = b.avg_vulnerability || 0;
+
+        if (sgi > 5 || avgVuln >= 60) return '#ef4444'; // Red
+        if (sgi > 3 || avgVuln >= 40) return '#f59e0b'; // Yellow
+        if (b.total > 0) return '#22c55e';              // Green
+        return '#334155';                               // Dark Grey
+    }
+
+    function buildSidebarContent(b) {
+        var totalForPct = b.total > 0 ? b.total : 1;
+        var coveragePct = b.population > 0 ? ((b.total / b.population) * 100).toFixed(2) : '0.00';
+        var html = '';
+
+        // Core Metrics
+        html += '<div style="margin-bottom: 20px;">';
+        html += '<div class="stat-row"><span class="stat-label">Total Population</span><span class="stat-value">' + (b.population ? b.population.toLocaleString() : 'N/A') + '</span></div>';
+        html += '<div class="stat-row"><span class="stat-label">Beneficiaries</span><span class="stat-value">' + b.total.toLocaleString() + '</span></div>';
+        html += '<div class="stat-row"><span class="stat-label">Coverage</span><span class="stat-value" style="color:var(--info);">' + coveragePct + '%</span></div>';
+        html += '</div>';
+
+        // Vulnerability
+        var vulnColor = b.avg_vulnerability >= 60 ? '#ef4444' : b.avg_vulnerability >= 40 ? '#f59e0b' : '#22c55e';
+        html += '<div style="margin-bottom: 20px;">';
+        html += '<div class="stat-row"><span class="stat-label">Avg Vulnerability</span><span class="stat-value" style="color:' + vulnColor + ';">' + (b.avg_vulnerability || 0) + ' / 100</span></div>';
+        html += '<div class="stat-row"><span class="stat-label">High-Risk Residents</span><span class="stat-value text-danger">' + (b.high_risk_count || 0) + '</span></div>';
+        html += '</div>';
+
+        // Gap Index
+        var sgi = b.service_gap_index || 0;
+        var sgiClass = sgi > 5 ? 'danger' : sgi > 3 ? 'warning' : 'success';
+        html += '<div class="gap-badge ' + sgiClass + '">';
+        html += '<i class="fi fi-rr-stats"></i> Service Gap Index: <strong>' + sgi + '</strong>';
+        html += '</div>';
+
+        // Details Button
+        if (b.id) {
+            html += '<div style="margin-top:20px;"><a href="/barangay/' + b.id + '/" class="btn btn-primary w-100 rounded-pill py-2" style="font-size:0.85rem;">Barangay Profile <i class="fi fi-rr-arrow-right ms-1"></i></a></div>';
+        }
+
+
+        // Programs Distribution
+        if (Object.keys(b.programs).length > 0) {
+            html += '<div style="margin-top:24px; border-top: 1px solid var(--border); padding-top: 16px;">';
+            html += '<h6 style="color:var(--text); font-size:0.85rem; font-weight:700; margin-bottom:12px;">Active Resource Allocation</h6>';
+            for (var prog in b.programs) {
+                var cnt = b.programs[prog];
+                var pct = Math.round((cnt / totalForPct) * 100);
+                html += '<div class="prog-bar-wrap">';
+                html += '<div class="prog-bar-label"><span>' + prog + '</span><span style="color:var(--text);">' + cnt + '</span></div>';
+                html += '<div class="prog-bar"><div class="prog-bar-fill" style="width:' + Math.min(pct, 100) + '%;"></div></div>';
+                html += '</div>';
+            }
+            html += '</div>';
+        }
+
+        // Intelligence Insights
+        if (b.insights && b.insights.length > 0) {
+            html += '<div style="margin-top:24px; border-top: 1px solid var(--border); padding-top: 16px;">';
+            html += '<h6 style="color:var(--text); font-size:0.85rem; font-weight:700; margin-bottom:12px;">Decision Insights</h6>';
+            b.insights.forEach(function (insight) {
+                var severityColor = insight.severity === 'danger' ? '#ef4444' : insight.severity === 'warning' ? '#f59e0b' : '#3b82f6';
+                var severityBG = insight.severity === 'danger' ? 'rgba(239, 68, 68, 0.1)' : insight.severity === 'warning' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(59, 130, 246, 0.1)';
+
+                html += '<div class="insight-chip" style="background:' + severityBG + '; color:var(--text-secondary); border-color:' + severityColor + ';">';
+                html += '<strong style="color:var(--text); display:block; margin-bottom:4px;">' + insight.icon + ' ' + (insight.type === 'program_gap' ? 'Service Gap' : 'Analytic Alert') + '</strong>';
+                html += '<span style="font-size:0.75rem; line-height:1.4;">' + insight.message.replace('Barangay ' + b.name, 'Locality') + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+
+        return html;
+    }
+
+    // Toggle Sidebar
+    function openSidebarForBarangay(b) {
+        document.getElementById('sidebar-brgy-name').textContent = b.name;
+        var popEl = document.getElementById('sidebar-brgy-pop');
+        if (popEl) popEl.textContent = b.population ? 'Registered Population: ' + b.population.toLocaleString() : 'Population Tracking Pending';
+        document.getElementById('sidebar-body').innerHTML = buildSidebarContent(b);
+        document.getElementById('map-sidebar').classList.remove('collapsed');
+        document.getElementById('btn-close-panel').style.display = 'block';
+    }
+
+    function closeSidebarPanel() {
+        document.getElementById('map-sidebar').classList.add('collapsed');
+        document.getElementById('btn-close-panel').style.display = 'none';
+    }
+
+    var geojsonUrl = "{% static 'tayabas_barangays.json' %}";
+
+    function getDataForBarangay(name) {
+        return allData.find(function (d) {
+            var n1 = d.name.toLowerCase().trim();
+            var n2 = name.toLowerCase().trim();
+            return n1 === n2 || n1.includes(n2) || n2.includes(n1);
+        }) || { name: name, total: 0, population: 0, programs: {}, expected: 0, gap: 0, avg_vulnerability: 0, high_risk_count: 0, service_gap_index: 0 };
+    }
+
+    function buildGeoJSON() {
+        if (geojsonLayer) { map.removeLayer(geojsonLayer); }
+
+        fetch(geojsonUrl)
+            .then(function (r) { return r.json(); })
+            .then(function (gj) {
+                geojsonLayer = L.geoJSON(gj, {
+                    style: function (feature) {
+                        var name = feature.properties.ADM4_EN;
+                        var b = getDataForBarangay(name);
+                        var shown = !activeFilter || (b.programs && b.programs[activeFilter]);
+                        return {
+                            fillColor: shown ? getPolygonColor(b) : '#1e293b',
+                            fillOpacity: shown ? 0.7 : 0.2,
+                            color: '#0f172a',
+                            weight: 1.5,
+                            opacity: 1,
+                        };
+                    },
+                    onEachFeature: function (feature, layer) {
+                        var name = feature.properties.ADM4_EN;
+                        layer.on({
+                            mouseover: function (e) {
+                                e.target.setStyle({ weight: 3, color: '#3b82f6', fillOpacity: 0.9 });
+                                e.target.bringToFront();
+                            },
+                            mouseout: function (e) {
+                                geojsonLayer.resetStyle(e.target);
+                            },
+                            click: function () {
+                                var b = getDataForBarangay(name);
+                                b.name = name;
+                                openSidebarForBarangay(b);
+                            },
+                        });
+                        var b = getDataForBarangay(name);
+                        var vulnLabel = b.avg_vulnerability >= 60 ? 'Urgent Priority' : b.avg_vulnerability >= 40 ? 'Moderate Concern' : 'Stable';
+                        layer.bindTooltip(
+                            '<div style="text-align:center;"><strong>' + name + '</strong><br>' +
+                            '<span style="font-size:0.75rem;">Beneficiaries: ' + b.total + '</span><br>' +
+                            '<span style="font-size:0.75rem; color:' + (b.avg_vulnerability >= 40 ? '#f59e0b' : '#22c55e') + ';">Status: ' + vulnLabel + '</span></div>',
+                            { sticky: true, className: 'leaflet-tooltip-custom' }
+                        );
+                    }
+                }).addTo(map);
+            });
+    }
+
+    fetch("{% url 'api_map_data' %}")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            allData = data;
+            buildGeoJSON();
+        });
+
+    var legend = L.control({ position: 'bottomleft' });
+    legend.onAdd = function () {
+        var div = L.DomUtil.create('div', 'map-legend');
+        div.innerHTML = '<div class="legend-title">Governance Risk Index</div>' +
+            '<div class="legend-item"><div class="legend-swatch" style="background:#334155;"></div> No Data Recorded</div>' +
+            '<div class="legend-item"><div class="legend-swatch" style="background:#22c55e;"></div> Low Risk (Safe)</div>' +
+            '<div class="legend-item"><div class="legend-swatch" style="background:#f59e0b;"></div> Moderate Risk (Alert)</div>' +
+            '<div class="legend-item"><div class="legend-swatch" style="background:#ef4444;"></div> High Risk (Action Required)</div>';
+        return div;
+    };
+    legend.addTo(map);
+
+    function togglePolygons() {
+        if (!geojsonLayer) return;
+        if (map.hasLayer(geojsonLayer)) { map.removeLayer(geojsonLayer); } else { map.addLayer(geojsonLayer); }
+        polygonsVisible = !polygonsVisible;
+        document.getElementById('btn-toggle-polygons').style.opacity = polygonsVisible ? '1' : '0.5';
+    }
+
+    function applyProgramFilter(prog) {
+        activeFilter = prog;
+        var url = "{% url 'api_map_data' %}";
+        if (prog) {
+            url += "?program=" + encodeURIComponent(prog);
+        }
+        
+        // Show loading state or directly fetch
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                allData = data;
+                buildGeoJSON();
+                
+                // If sidebar is open, refresh it
+                var currentBarangay = document.getElementById('sidebar-brgy-name').textContent;
+                if (currentBarangay && currentBarangay !== 'Select a Barangay') {
+                    var b = getDataForBarangay(currentBarangay);
+                    b.name = currentBarangay;
+                    openSidebarForBarangay(b);
+                }
+            });
+    }
+</script>
+{% endblock %}

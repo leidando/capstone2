@@ -1,0 +1,429 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard  CSWDO{% endblock %}
+{% block page_title %}Analytics Dashboard{% endblock %}
+{% block breadcrumb %}Admin / Dashboard{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container position-relative" style="z-index: 1;">
+
+    <!-- SECTION 1: KEY METRICS -->
+    <h3 class="section-title mb-4"><i class="fi fi-rr-apps text-slate-500"></i> Key Operations Metrics</h3>
+    
+    <div class="row g-4 mb-5">
+        <div class="col-12 col-sm-6 col-lg-2">
+            <div class="metric-card mc-blue">
+                <div class="metric-icon"><i class="fi fi-rr-users"></i></div>
+                <div class="metric-label">Total Beneficiaries</div>
+                <div class="metric-value">{{ total_beneficiaries }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-2">
+            <div class="metric-card mc-cyan">
+                <div class="metric-icon"><i class="fi fi-rr-clipboard-list"></i></div>
+                <div class="metric-label">Total Requests</div>
+                <div class="metric-value">{{ total_requests }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-2">
+            <div class="metric-card mc-yellow">
+                <div class="metric-icon"><i class="fi fi-rr-hourglass"></i></div>
+                <div class="metric-label">Pending Requests</div>
+                <div class="metric-value">{{ pending_requests }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-2">
+            <div class="metric-card mc-green">
+                <div class="metric-icon"><i class="fi fi-rr-folder"></i></div>
+                <div class="metric-label">Active Programs</div>
+                <div class="metric-value">{{ total_programs }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-2">
+            <div class="metric-card mc-red">
+                <div class="metric-icon"><i class="fi fi-rr-shield-exclamation"></i></div>
+                <div class="metric-label">High-Risk Cases</div>
+                <div class="metric-value text-danger">{{ high_risk_count }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-2">
+            <div class="metric-card mc-teal">
+                <div class="metric-icon"><i class="fi fi-rr-stats"></i></div>
+                <div class="metric-label">Coverage Rate</div>
+                <div class="metric-value">{{ coverage_rate|default:0 }}%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: INSIGHTS PANEL -->
+    <div class="card p-4 mb-5" style="border-left: 4px solid var(--warning);">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
+            <div>
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <h4 class="m-0 fw-bold text-slate-900"><i class="fi fi-rr-bulb text-warning me-2"></i> System Insights & Recommendations</h4>
+                {% if insights|length > 0 %}
+                <span class="badge bg-primary text-white rounded-pill px-3 py-1">
+                    {{ insights|length }} Issues Detected
+                </span>
+                {% endif %}
+            </div>
+            <p class="text-slate-600 mb-0">
+                The automated analysis engine monitors program gaps, vulnerability hotspots, and service deficiencies in real time.
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'admin_insights' %}" class="btn btn-primary px-4 py-2">
+                Review Full Report 
+            </a>
+        </div>
+    </div>
+
+    <!-- SECTION 2b: DOWNLOADABLE REPORTS -->
+    <div class="card p-4 mb-5">
+        <div class="panel-header">
+            <h5 class="d-flex align-items-center gap-2"><i class="fi fi-rr-document text-primary"></i> Downloadable Reports</h5>
+        </div>
+        <div class="p-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px;">
+                        <h6 class="fw-bold mb-2" style="color: var(--text);"><i class="fi fi-rr-house-building text-primary me-2"></i>Barangay Analytics Report</h6>
+                        <p class="small mb-3" style="color: var(--text-muted);">Population data, vulnerability scores, service gap index, and recommendations per barangay.</p>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'export_barangay_report' %}" class="btn btn-outline btn-sm rounded-pill px-3" id="dl-barangay-csv">
+                                <i class="fi fi-rr-download me-1"></i> CSV
+                            </a>
+                            <a href="{% url 'export_barangay_report_pdf' %}" class="btn btn-primary btn-sm rounded-pill px-3" id="dl-barangay-pdf">
+                                <i class="fi fi-rr-download me-1"></i> PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px;">
+                        <h6 class="fw-bold mb-2" style="color: var(--text);"><i class="fi fi-rr-target text-success me-2"></i>Program Effectiveness Report</h6>
+                        <p class="small mb-3" style="color: var(--text-muted);">Request stats, approval rates, effectiveness percentages, and operational recommendations.</p>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'export_program_report' %}" class="btn btn-outline btn-sm rounded-pill px-3" id="dl-program-csv">
+                                <i class="fi fi-rr-download me-1"></i> CSV
+                            </a>
+                            <a href="{% url 'export_program_report_pdf' %}" class="btn btn-primary btn-sm rounded-pill px-3" id="dl-program-pdf">
+                                <i class="fi fi-rr-download me-1"></i> PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3: ANALYTICS TABLES -->
+    <h3 class="section-title"><i class="fi fi-rr-table text-muted"></i> Vulnerability & Service Analytics</h3>
+
+    <!-- SECTION 3: ANALYTICS GRID -->
+    <div class="row g-4 mb-5">
+        <!-- Vulnerable Barangays -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-shield-exclamation text-danger"></i> High-Risk Hotspots
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Barangay</th>
+                                    <th class="text-center">Score</th>
+                                    <th class="text-center">Critical</th>
+                                    <th class="text-end pe-4">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if vulnerable_barangays %}
+                                    {% for b in vulnerable_barangays %}
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-slate-900">{{ b.name }}</td>
+                                        <td class="text-center">
+                                            <span class="badge {% if b.avg_vuln > 7 %}bg-danger{% elif b.avg_vuln > 4 %}bg-warning{% else %}bg-success{% endif %} text-white">
+                                                {{ b.avg_vuln|floatformat:1 }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center text-danger fw-bold">{{ b.high_risk }}</td>
+                                        <td class="text-end text-slate-500 pe-4">{{ b.ben_count }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr><td colspan="4" class="text-center text-muted py-4">No data available</td></tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Gap Areas -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-stats text-warning"></i> Service Gap Areas
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Barangay</th>
+                                    <th class="text-center">Beneficiaries</th>
+                                    <th class="text-center">Services</th>
+                                    <th class="text-end pe-4">Gap Index</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if service_gap_areas %}
+                                    {% for b in service_gap_areas %}
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-slate-900">{{ b.name }}</td>
+                                        <td class="text-center text-slate-500">{{ b.total_bens }}</td>
+                                        <td class="text-center text-slate-500">{{ b.total_services }}</td>
+                                        <td class="text-end pe-4">
+                                            <span class="badge {% if b.sgi > 5 %}bg-danger{% elif b.sgi > 3 %}bg-warning{% else %}bg-success{% endif %} text-white">
+                                                {{ b.sgi|floatformat:1 }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr><td colspan="4" class="text-center text-muted py-4">No data available</td></tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 4: PROGRAM EFFECTIVENESS & CHARTS -->
+    <h3 class="section-title mb-4"><i class="fi fi-rr-chart-pie-alt text-slate-500"></i> Operational Distributions</h3>
+    
+    <div class="row g-4 mb-5">
+        {% if program_effectiveness %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-target text-success"></i> Program Effectiveness
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Program</th>
+                                    <th class="text-center">Requests</th>
+                                    <th class="text-center">Approved</th>
+                                    <th class="text-start ps-4" style="width: 30%">Effectiveness Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in program_effectiveness %}
+                                <tr>
+                                    <td class="ps-4 fw-bold text-slate-900">{{ p.name|truncatewords:6 }}</td>
+                                    <td class="text-center text-slate-500">{{ p.total_reqs }}</td>
+                                    <td class="text-center text-slate-500">{{ p.approved_reqs }}</td>
+                                    <td class="text-start ps-4">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar {% if p.effectiveness >= 70 %}bg-success{% elif p.effectiveness >= 40 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ p.effectiveness }}%;"></div>
+                                            </div>
+                                            <span class="small fw-bold {% if p.effectiveness >= 70 %}text-success{% elif p.effectiveness >= 40 %}text-warning{% else %}text-danger{% endif %}">{{ p.effectiveness }}%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Charts Row 1 -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-chart-line-up text-primary"></i> Beneficiaries per Program
+                    </h5>
+                </div>
+                <div class="card-body" style="height: 450px;">
+                    <canvas id="programChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-house-building text-success"></i> Beneficiaries by Barangay
+                    </h5>
+                </div>
+                <div class="card-body" style="height: 450px;">
+                    <canvas id="barangayChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-venus-mars text-info"></i> Gender Distribution
+                    </h5>
+                </div>
+                <div class="card-body d-flex justify-content-center align-items-center">
+                    <div style="width: 70%; max-width: 300px; height: 300px;">
+                        <canvas id="genderChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-users text-warning"></i> Age Groups
+                    </h5>
+                </div>
+                <div class="card-body" style="height: 300px;">
+                    <canvas id="ageChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Chart.js light mode defaults
+    Chart.defaults.color = '#64748b'; // slate-500
+    Chart.defaults.scale.grid.color = '#f1f5f9'; // slate-100
+    Chart.defaults.plugins.tooltip.backgroundColor = '#ffffff';
+    Chart.defaults.plugins.tooltip.titleColor = '#0f172a'; // slate-900
+    Chart.defaults.plugins.tooltip.bodyColor = '#475569'; // slate-600
+    Chart.defaults.plugins.tooltip.borderColor = '#e2e8f0'; // slate-200
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+
+    const COLORS = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1'];
+
+    //  Beneficiaries per Program 
+    const programData = JSON.parse('{{ program_data|escapejs }}');
+    new Chart(document.getElementById('programChart'), {
+        type: 'bar',
+        data: {
+            labels: programData.map(d => {
+                var name = d.program__name;
+                return name.length > 35 ? name.substring(0, 35) + '...' : name;
+            }),
+            datasets: [{
+                label: 'Beneficiaries',
+                data: programData.map(d => d.count),
+                backgroundColor: COLORS.slice(0, programData.length),
+                borderRadius: 4,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: { beginAtZero: true, grid: { display: false } },
+                y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+
+    //  Beneficiaries per Barangay 
+    const barangayData = JSON.parse('{{ barangay_data|escapejs }}');
+    new Chart(document.getElementById('barangayChart'), {
+        type: 'bar',
+        data: {
+            labels: barangayData.map(d => d.barangay__name),
+            datasets: [{
+                label: 'Beneficiaries',
+                data: barangayData.map(d => d.count),
+                backgroundColor: '#3b82f6',
+                borderRadius: 4,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { grid: { display: false } }, y: { beginAtZero: true } }
+        }
+    });
+
+    //  Gender Distribution 
+    const genderData = JSON.parse('{{ gender_data|escapejs }}');
+    new Chart(document.getElementById('genderChart'), {
+        type: 'doughnut',
+        data: {
+            labels: genderData.map(d => d.gender),
+            datasets: [{
+                data: genderData.map(d => d.count),
+                backgroundColor: ['#ec4899', '#3b82f6', '#06b6d4'],
+                borderWidth: 2,
+                borderColor: '#ffffff',
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: { legend: { position: 'bottom', labels: { padding: 20 } } }
+        }
+    });
+
+    //  Age Groups 
+    const ageData = JSON.parse('{{ age_groups|escapejs }}');
+    new Chart(document.getElementById('ageChart'), {
+        type: 'bar',
+        data: {
+            labels: ageData.map(d => d.age_group),
+            datasets: [{
+                label: 'Beneficiaries',
+                data: ageData.map(d => d.count),
+                backgroundColor: ['#06b6d4', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+                borderRadius: 4,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { grid: { display: false } }, y: { beginAtZero: true } }
+        }
+    });
+</script>
+{% endblock %}

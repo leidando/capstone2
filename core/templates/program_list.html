@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Programs  CSWDO{% endblock %}
+{% block page_title %}Program Management{% endblock %}
+{% block breadcrumb %}Admin / Programs{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+<div class="card p-4 mb-5">
+    <form method="GET" class="row g-3 align-items-center" id="filter-form">
+        <!-- Preserve sorting when making a new search/filter -->
+        <input type="hidden" name="sort" value="{{ sort }}">
+        
+        <div class="col-12 col-md-5">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fi fi-rr-search"></i></span>
+                <input type="text" name="search" value="{{ search }}" placeholder="Search program name..."
+                    class="form-control border-start-0 ps-0" id="filter-search">
+            </div>
+        </div>
+
+        <div class="col-12 col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary px-4 w-100" id="filter-apply">Search</button>
+            <a href="{% url 'program_list' %}" class="btn btn-outline w-100 text-center" id="filter-clear">Clear</a>
+        </div>
+    </form>
+</div>
+
+<div class="card mb-5">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+        <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+            <i class="fi fi-rr-folder text-primary"></i> Programs <span class="badge bg-slate-100 text-slate-500 border border-slate-200 ms-2">{{ total_count }}</span>
+        </h5>
+        <a href="{% url 'program_add' %}" class="btn btn-primary btn-sm" id="btn-add-program">
+            <i class="fi fi-rr-plus me-1"></i> Add Program
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table mb-0" id="program-table">
+            <thead>
+                <tr>
+                    <th class="ps-4">
+                        <a href="?{% url_replace sort='name_asc' %}" style="color:var(--text-muted); text-decoration:none;">Program Name</a>
+                        {% if sort == 'name_asc' %}<i class="fi fi-rr-caret-up ms-1" style="color:var(--primary);"></i>{% elif sort == 'name_desc' %}<a href="?{% url_replace sort='name_asc' %}"><i class="fi fi-rr-caret-down ms-1" style="color:var(--primary);"></i></a>{% endif %}
+                    </th>
+                    <th>Type</th>
+                    <th class="text-center">
+                        <a href="?{% url_replace sort='bens_desc' %}" style="color:var(--text-muted); text-decoration:none;">Beneficiaries</a>
+                        {% if sort == 'bens_desc' %}<i class="fi fi-rr-caret-down ms-1" style="color:var(--primary);"></i>{% elif sort == 'bens_asc' %}<i class="fi fi-rr-caret-up ms-1" style="color:var(--primary);"></i>{% endif %}
+                    </th>
+                    <th>Status</th>
+                    <th class="pe-4 text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in page_obj %}
+                <tr>
+                    <td class="ps-4">
+                        <strong class="text-slate-900">{{ p.name }}</strong>
+                        <div class="text-slate-500" style="max-width:400px; font-size: 0.8125rem; margin-top: 4px;">
+                            {{ p.description|truncatewords:20 }}
+                        </div>
+                    </td>
+                    <td class="text-slate-600" style="font-size: 0.875rem;">{{ p.transaction_type }}</td>
+                    <td class="fw-bold text-center text-primary" style="font-size: 1rem;">{{ p.beneficiary_count }}</td>
+                    <td>
+                        {% if p.is_active %}
+                        <span class="badge bg-success text-white"><i class="fi fi-rr-check-circle me-1"></i> Active</span>
+                        {% else %}
+                        <span class="badge bg-slate-100 text-slate-400 border border-slate-200"><i class="fi fi-rr-cross-circle me-1"></i> Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="pe-4 text-end">
+                        <div class="d-flex gap-2 justify-content-end align-items-center">
+                            <a href="{% url 'program_detail' p.pk %}" class="btn btn-outline btn-sm" style="font-size: 0.8125rem;" id="view-prog-{{ p.pk }}">
+                                View Details
+                            </a>
+                            <a href="{% url 'program_edit' p.pk %}" class="btn btn-outline btn-sm text-slate-500" id="edit-prog-{{ p.pk }}" title="Edit">
+                                <i class="fi fi-rr-edit"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <div class="d-flex justify-content-between align-items-center p-3 border-top border-slate-100">
+            <span class="text-slate-500" style="font-size: 0.8125rem;">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} programs
+            </span>
+            <div class="d-flex gap-1">
+                {% if page_obj.has_previous %}
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=1 %}">&laquo; First</a>
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=page_obj.previous_page_number %}">Prev</a>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="btn btn-primary btn-sm disabled">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a class="btn btn-outline btn-sm" href="?{% url_replace page=num %}">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=page_obj.next_page_number %}">Next</a>
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=page_obj.paginator.num_pages %}">Last &raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% else %}
+        <div class="text-center py-5">
+            <div style="font-size: 3rem; color: #334155; margin-bottom: 16px;"><i class="fi fi-rr-folder"></i></div>
+            <h5 class="fw-bold" style="color:var(--text); margin-bottom: 8px;">No programs found</h5>
+            <p style="color:var(--text-muted);">
+                {% if search %}No programs match your search. {% else %}Create your first program to get started.{% endif %}
+            </p>
+            {% if not search %}
+            <a href="{% url 'program_add' %}" class="btn btn-primary px-4 rounded-pill mt-3">Add Program</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

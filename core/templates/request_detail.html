@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}Application #{{ req.pk }} - CSWDO{% endblock %}
+{% block page_title %}Application Review{% endblock %}
+{% block breadcrumb %}Admin / Requests / #{{ req.pk }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 900px;">
+
+    <!-- Applicant Info Card -->
+    <div class="panel-card gap-32">
+        <div class="panel-header">
+            <h5 class="fw-bold mb-0">
+                <i class="fi fi-rr-clipboard-list text-primary me-2"></i> Application #{{ req.pk }}
+            </h5>
+            {% if req.status == 'approved' %}
+            <span class="badge-vuln badge-success"><i class="fi fi-rr-check-circle me-1"></i> {{ req.get_status_display }}</span>
+            {% elif req.status == 'rejected' %}
+            <span class="badge-vuln badge-danger"><i class="fi fi-rr-cross-circle me-1"></i> {{ req.get_status_display }}</span>
+            {% elif req.status == 'under_review' %}
+            <span class="badge-vuln badge-info"><i class="fi fi-rr-eye me-1"></i> {{ req.get_status_display }}</span>
+            {% else %}
+            <span class="badge-vuln badge-warning"><i class="fi fi-rr-time-fast me-1"></i> {{ req.get_status_display }}</span>
+            {% endif %}
+        </div>
+        <div class="p-4 p-md-5">
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-sm-6">
+                    <div class="text-uppercase fw-bold mb-1" style="font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.05em;">Applicant</div>
+                    <div class="fw-bold" style="font-size: 1.25rem; color: var(--text);">{{ req.user.get_full_name|default:req.user.username }}</div>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <div class="text-uppercase fw-bold mb-1" style="font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.05em;">Program</div>
+                    <div class="fw-bold" style="color: var(--primary-light);">
+                        {{ req.program.name }}
+                        {% if req.selected_category %}
+                        <div style="color: var(--text-muted); font-weight: normal; font-size: 0.85rem; mt-1">
+                             {{ req.selected_category }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <div class="text-uppercase fw-bold mb-1" style="font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.05em;">Barangay</div>
+                    <div class="fw-medium" style="color: var(--text-secondary);">{{ req.barangay.name|default:"Not specified" }}</div>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <div class="text-uppercase fw-bold mb-1" style="font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.05em;">Date Submitted</div>
+                    <div class="fw-medium" style="color: var(--text-secondary);">{{ req.date_submitted|date:"F d, Y - h:i A" }}</div>
+                </div>
+            </div>
+
+            {% if req.reason %}
+            <div class="mt-2 pt-3" style="border-top: 1px solid var(--border);">
+                <div class="text-uppercase fw-bold mb-2" style="font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.05em;">Reason for Requesting</div>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin-bottom: 0;">{{ req.reason }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Document Summary Banner -->
+    <div class="row g-3 gap-32">
+        <div class="col-12 col-sm-4">
+            <div class="panel-card p-3 text-center" style="border-left: 4px solid var(--primary);">
+                <div class="display-6 fw-bold mb-1" style="color: var(--primary);">{{ total_docs }}</div>
+                <div class="text-uppercase fw-bold" style="font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.05em;">REQUIRED</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-4">
+            <div class="panel-card p-3 text-center" style="border-left: 4px solid var(--warning);">
+                <div class="display-6 fw-bold mb-1" style="color: var(--warning);">{{ uploaded_docs }}/{{ total_docs }}</div>
+                <div class="text-uppercase fw-bold" style="font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.05em;">UPLOADED</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-4">
+            <div class="panel-card p-3 text-center" style="border-left: 4px solid var(--success);">
+                <div class="display-6 fw-bold mb-1" style="color: var(--success);">{{ verified_docs }}/{{ total_docs }}</div>
+                <div class="text-uppercase fw-bold" style="font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.05em;">VERIFIED</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submitted Documents -->
+    <div class="panel-card gap-32">
+        <div class="panel-header">
+            <h5 class="fw-bold mb-0">
+                <i class="fi fi-rr-clip text-primary me-2"></i> Submitted Documents
+            </h5>
+        </div>
+        <div class="p-0">
+            {% if app_docs %}
+            <div class="list-group list-group-flush">
+                {% for doc in app_docs %}
+                <div class="list-group-item bg-transparent d-flex flex-column flex-sm-row align-items-sm-center gap-3 p-4" style="border-bottom: 1px solid var(--border);" id="doc-row-{{ doc.pk }}">
+                    
+                    <!-- Status Icon -->
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0
+                        {% if doc.status == 'verified' %}badge-success
+                        {% elif doc.status == 'rejected' %}badge-danger
+                        {% elif doc.file %}badge-warning
+                        {% else %}badge-vuln{% endif %}" 
+                        style="width: 48px; height: 48px; font-size: 1.25rem; {% if not doc.status or not doc.file %}background: rgba(148,163,184,0.1); color: var(--text-muted); border: 1px solid var(--border);{% endif %}">
+                        
+                        {% if doc.status == 'verified' %}<i class="fi fi-rr-check"></i>
+                        {% elif doc.status == 'rejected' %}<i class="fi fi-rr-cross"></i>
+                        {% elif doc.file %}<i class="fi fi-rr-clip"></i>
+                        {% else %}<i class="fi fi-rr-cross-circle"></i>
+                        {% endif %}
+                    </div>
+
+                    <!-- Document Info -->
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-bold mb-1" style="color: var(--text);">{{ doc.required_document.document_name }}</div>
+                        <div class="small">
+                            {% if doc.status == 'verified' %}
+                            <span style="color: var(--success); font-weight: 600;"><i class="fi fi-rr-check me-1"></i> Verified</span>
+                            {% elif doc.status == 'rejected' %}
+                            <span style="color: var(--danger); font-weight: 600;"><i class="fi fi-rr-cross me-1"></i> Rejected</span>
+                            {% if doc.admin_note %}<span style="color: var(--text-muted); margin-left: 4px;">- {{ doc.admin_note }}</span>{% endif %}
+                            {% elif doc.file %}
+                            <span style="color: var(--warning); font-weight: 600;"><i class="fi fi-rr-time-fast me-1"></i> Uploaded - Pending Review</span>
+                            {% else %}
+                            <span style="color: var(--text-muted); font-weight: 600;"><i class="fi fi-rr-cross-circle me-1"></i> Not Uploaded</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- File Actions -->
+                    <div class="d-flex flex-wrap gap-2 align-items-center mt-3 mt-sm-0">
+                        {% if doc.file %}
+                        <a href="{{ doc.file.url }}" target="_blank" class="btn btn-outline btn-sm rounded-pill px-3" id="view-file-{{ doc.pk }}">
+                            <i class="fi fi-rr-eye me-1"></i> View
+                        </a>
+                        <a href="{{ doc.file.url }}" download class="btn btn-outline btn-sm rounded-pill px-3" id="dl-file-{{ doc.pk }}">
+                            <i class="fi fi-rr-download me-1"></i> Download
+                        </a>
+                        
+                        {% if user.profile.is_admin %}
+                        <form method="POST" action="{% url 'document_verify' doc.pk %}" class="d-inline-flex gap-2" id="vf-{{ doc.pk }}">
+                            {% csrf_token %}
+                            {% if doc.status != 'verified' %}
+                            <button type="submit" name="status" value="verified" class="btn btn-success btn-sm rounded-pill px-3">
+                                <i class="fi fi-rr-check me-1"></i> Verify
+                            </button>
+                            {% endif %}
+                            {% if doc.status != 'rejected' %}
+                            <button type="submit" name="status" value="rejected" class="btn btn-danger btn-sm rounded-pill px-3">
+                                <i class="fi fi-rr-cross me-1"></i> Reject
+                            </button>
+                            {% endif %}
+                            {% if doc.status == 'verified' or doc.status == 'rejected' %}
+                            <button type="submit" name="status" value="pending" class="btn btn-outline btn-sm rounded-pill px-3">
+                                Reset
+                            </button>
+                            {% endif %}
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div style="font-size: 3rem; color: var(--border); mb-3 opacity-50"><i class="fi fi-rr-mailbox"></i></div>
+                <h5 class="fw-bold" style="color: var(--text);">No documents required</h5>
+                <p style="color: var(--text-muted);">This program does not currently require any document uploads.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Admin Actions -->
+    {% if user.profile.is_admin %}
+    <div class="panel-card gap-32">
+        <div class="panel-header">
+            <h5 class="fw-bold mb-0">
+                <i class="fi fi-rr-bolt text-primary me-2"></i> Application Actions
+            </h5>
+        </div>
+        <div class="p-4 p-md-5">
+            {% if not is_complete and total_docs > 0 %}
+            <div class="alert alert-warning d-flex align-items-center gap-3 mb-4">
+                <i class="fi fi-rr-warning fs-4"></i>
+                <div>
+                    <strong class="d-block mb-1">Incomplete Application</strong>
+                    <span class="small">{{ uploaded_docs }}/{{ total_docs }} documents uploaded. Cannot approve until all documents are submitted.</span>
+                </div>
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{% url 'request_update_status' req.pk %}" class="d-flex gap-2 flex-wrap" id="status-form">
+                {% csrf_token %}
+                <input type="hidden" name="redirect" value="request_detail">
+
+                {% if req.status == 'submitted' %}
+                <button type="submit" name="status" value="under_review" class="btn btn-warning px-4 py-2" id="btn-review">
+                    <i class="fi fi-rr-edit me-1"></i> Mark as Under Review
+                </button>
+                {% endif %}
+
+                {% if req.status == 'submitted' or req.status == 'under_review' %}
+                <button type="submit" name="status" value="approved" class="btn btn-success px-4 py-2" id="btn-approve">
+                    <i class="fi fi-rr-check me-1"></i> Approve Application
+                </button>
+                <button type="submit" name="status" value="rejected" class="btn btn-danger px-4 py-2" id="btn-reject">
+                    <i class="fi fi-rr-cross me-1"></i> Reject Application
+                </button>
+                {% endif %}
+
+                {% if req.status == 'approved' %}
+                <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2 px-3 fw-bold rounded-pill mx-auto ms-sm-0 w-100 w-sm-auto">
+                    <i class="fi fi-rr-check"></i> This application has been approved
+                </div>
+                {% endif %}
+
+                {% if req.status == 'rejected' %}
+                <div class="alert alert-danger d-flex align-items-center gap-2 mb-0 py-2 px-3 fw-bold rounded-pill mx-auto ms-sm-0 w-100 w-sm-auto">
+                    <i class="fi fi-rr-cross"></i> This application has been rejected
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mb-5 mt-4">
+        {% if user.profile.is_admin %}
+        <a href="{% url 'request_list' %}" class="btn btn-outline px-4 py-2 fw-semibold">
+            <i class="fi fi-rr-arrow-left me-1"></i> Back to Requests
+        </a>
+        {% else %}
+        <a href="{% url 'user_dashboard' %}" class="btn btn-outline px-4 py-2 fw-semibold">
+            <i class="fi fi-rr-arrow-left me-1"></i> Back to Dashboard
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

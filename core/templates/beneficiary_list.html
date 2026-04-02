@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Beneficiaries  CSWDO{% endblock %}
+{% block page_title %}Beneficiary Management{% endblock %}
+{% block breadcrumb %}Admin / Beneficiaries{% endblock %}
+
+{% block content %}
+
+<!-- Summary Section -->
+<div class="row g-4 mb-5">
+    <div class="col-12 col-md-3">
+        <div class="metric-card mc-blue">
+            <div class="metric-icon"><i class="fi fi-rr-users"></i></div>
+            <div class="metric-label">Total</div>
+            <div class="metric-value">{{ total_count }}</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-3">
+        <div class="metric-card mc-red">
+            <div class="metric-icon"><i class="fi fi-rr-shield-exclamation"></i></div>
+            <div class="metric-label">High-Risk</div>
+            <div class="metric-value text-danger">{{ high_risk_count }}</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-3">
+        <div class="metric-card mc-yellow">
+            <div class="metric-icon"><i class="fi fi-rr-warning"></i></div>
+            <div class="metric-label">Moderate</div>
+            <div class="metric-value">{{ moderate_count }}</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-3">
+        <div class="metric-card mc-green">
+            <div class="metric-icon"><i class="fi fi-rr-shield-check"></i></div>
+            <div class="metric-label">Low-Risk</div>
+            <div class="metric-value text-success">{{ low_count }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card p-4 mb-5">
+    <form method="GET" class="row g-3 align-items-center" id="filter-form">
+        <!-- Preserve sorting when making a new search/filter -->
+        <input type="hidden" name="sort" value="{{ sort }}">
+        
+        <div class="col-12 col-md-3">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fi fi-rr-search"></i></span>
+                <input type="text" name="search" value="{{ search }}" placeholder="Search name, barangay..."
+                    class="form-control border-start-0 ps-0" id="filter-search">
+            </div>
+        </div>
+
+        <div class="col-12 col-md-2">
+            <select name="barangay" class="form-select" id="filter-barangay">
+                <option value="">All Barangays</option>
+                {% for b in barangays %}
+                <option value="{{ b.id }}" {% if selected_barangay|is_equal:b.id %}selected{% endif %}>
+                    {{ b.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-12 col-md-2">
+            <select name="status" class="form-select" id="filter-status">
+                <option value="">All Statuses</option>
+                <option value="pending" {% if status_filter|is_equal:'pending' %}selected{% endif %}>Pending</option>
+                <option value="approved" {% if status_filter|is_equal:'approved' %}selected{% endif %}>Approved</option>
+                <option value="rejected" {% if status_filter|is_equal:'rejected' %}selected{% endif %}>Rejected</option>
+            </select>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <select name="vulnerability" class="form-select" id="filter-vulnerability">
+                <option value="">All Vulnerability</option>
+                <option value="critical" {% if vuln_filter == 'critical' %}selected{% endif %}>🔴 Critical</option>
+                <option value="high" {% if vuln_filter == 'high' %}selected{% endif %}>🟠 High</option>
+                <option value="medium" {% if vuln_filter == 'medium' %}selected{% endif %}>🟡 Medium</option>
+                <option value="low" {% if vuln_filter == 'low' %}selected{% endif %}>🟢 Low</option>
+            </select>
+        </div>
+
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary px-3 w-100" id="filter-apply">Filter</button>
+            <a href="{% url 'beneficiary_list' %}" class="btn btn-outline w-100 text-center" id="filter-clear">Clear</a>
+        </div>
+    </form>
+</div>
+
+<!-- Beneficiary Table -->
+<div class="card mb-5">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+        <h5 class="card-title d-flex align-items-center gap-2 mb-0"><i class="fi fi-rr-users text-primary"></i> Beneficiaries Directory</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table mb-0" id="beneficiary-table">
+            <thead>
+                <tr>
+                    <th class="ps-4">
+                        <a href="?{% url_replace sort='name_asc' %}" style="color:var(--text-muted); text-decoration:none;">Name</a>
+                        {% if sort == 'name_asc' %}<i class="fi fi-rr-caret-up ms-1" style="color:var(--primary);"></i>{% elif sort == 'name_desc' %}<a href="?{% url_replace sort='name_asc' %}"><i class="fi fi-rr-caret-down ms-1" style="color:var(--primary);"></i></a>{% endif %}
+                    </th>
+                    <th>
+                        <a href="?{% url_replace sort='date_asc' %}" style="color:var(--text-muted); text-decoration:none;">Date Created</a>
+                        {% if sort == 'date_desc' %}<i class="fi fi-rr-caret-down ms-1" style="color:var(--primary);"></i>{% elif sort == 'date_asc' %}<i class="fi fi-rr-caret-up ms-1" style="color:var(--primary);"></i>{% endif %}
+                    </th>
+                    <th>Barangay</th>
+                    <th>
+                        <a href="?{% url_replace sort='vuln_desc' %}" style="color:var(--text-muted); text-decoration:none;">Vulnerability</a>
+                        {% if sort == 'vuln_desc' %}<i class="fi fi-rr-caret-down ms-1" style="color:var(--primary);"></i>{% elif sort == 'vuln_asc' %}<i class="fi fi-rr-caret-up ms-1" style="color:var(--primary);"></i>{% endif %}
+                    </th>
+                    <th>Status</th>
+                    <th class="pe-4 text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in page_obj %}
+                <tr>
+                    <td class="ps-4">
+                        <strong class="text-slate-900">{{ b.user.get_full_name|default:b.user.username }}</strong>
+                        <br><small class="text-slate-500">@{{ b.user.username }}</small>
+                    </td>
+                    <td class="text-slate-600">{{ b.created_at|date:"M d, Y" }}</td>
+                    <td class="text-slate-600">{{ b.barangay|default:"-" }}</td>
+                    <td>
+                        <span class="badge {% if b.vulnerability_score >= 80 %}bg-danger{% elif b.vulnerability_score >= 50 %}bg-warning{% else %}bg-info{% endif %} text-white">
+                            {{ b.vulnerability_score|floatformat:1 }}%
+                        </span>
+                    </td>
+                    <td>
+                        {% if b.status == 'approved' %}
+                        <span class="badge bg-success text-white">Approved</span>
+                        {% else %}
+                        <span class="badge bg-warning text-white">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'beneficiary_edit' b.pk %}" class="btn btn-sm btn-outline" title="View Profile">
+                                <i class="fi fi-rr-eye"></i>
+                            </a>
+                            {% if b.status != 'approved' and user.profile.is_admin %}
+                            <form method="post" action="{% url 'beneficiary_approve' b.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-success text-white" title="Approve">
+                                    <i class="fi fi-rr-check"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Pagination Controls -->
+        <div class="d-flex justify-content-between align-items-center p-3" style="background-color: var(--bg); border-top: 1px solid var(--border);">
+            <span style="color:var(--text-muted); font-size: 0.85rem;">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} beneficiaries
+            </span>
+            <div class="d-flex gap-1">
+                {% if page_obj.has_previous %}
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=1 %}">&laquo; First</a>
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=page_obj.previous_page_number %}">Prev</a>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="btn btn-primary btn-sm disabled">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a class="btn btn-outline btn-sm" href="?{% url_replace page=num %}">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=page_obj.next_page_number %}">Next</a>
+                <a class="btn btn-outline btn-sm" href="?{% url_replace page=page_obj.paginator.num_pages %}">Last &raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% else %}
+        <div class="text-center py-5">
+            <div style="font-size: 3rem; color: #334155; margin-bottom: 16px;"><i class="fi fi-rr-users"></i></div>
+            <h5 class="fw-bold text-slate-900" style="margin-bottom: 8px;">No beneficiaries found</h5>
+            <p class="text-slate-500">Try adjusting your search or filters.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

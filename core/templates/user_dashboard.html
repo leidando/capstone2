@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Dashboard  CSWDO{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+{% block breadcrumb %}Home / Dashboard{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container position-relative" style="z-index: 1;">
+
+    <!-- SECTION 1: QUICK ACTIONS -->
+    <h3 class="section-title mb-4"><i class="fi fi-rr-apps text-slate-500"></i> Quick Actions</h3>
+    
+    <div class="row g-4 mb-5">
+        <div class="col-12 col-md-4">
+            <a href="{% url 'submit_beneficiary' %}" class="metric-card mc-action-submit" id="action-submit-beneficiary">
+                <div class="metric-icon"><i class="fi fi-rr-edit"></i></div>
+                <div class="metric-label">Submit Information</div>
+                <div class="metric-text">Register as a beneficiary under a CSWDO program</div>
+            </a>
+        </div>
+        
+        <div class="col-12 col-md-4">
+            {% if has_approved_profile %}
+            <a href="{% url 'request_assistance' %}" class="metric-card mc-action-request" id="action-request-assistance">
+                <div class="metric-icon"><i class="fi fi-rr-handshake"></i></div>
+                <div class="metric-label">Request Assistance</div>
+                <div class="metric-text">Submit a request for program assistance or support</div>
+            </a>
+            {% else %}
+            <div class="metric-card mc-action-request-disabled" title="You must have an approved beneficiary profile first.">
+                <div class="metric-icon"><i class="fi fi-rr-hourglass"></i></div>
+                <div class="metric-label">Request Assistance</div>
+                <div class="metric-text text-danger">Requires Approved Profile</div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-12 col-md-4">
+            <a href="{% url 'map' %}" class="metric-card mc-action-map" id="action-view-map">
+                <div class="metric-icon"><i class="fi fi-rr-map"></i></div>
+                <div class="metric-label">View Map</div>
+                <div class="metric-text">See beneficiary distribution across Tayabas City</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- SECTION 2: MY REQUESTS -->
+    <h3 class="section-title mb-4"><i class="fi fi-rr-clipboard-list text-slate-500"></i> My Assistance Requests</h3>
+    <div class="card mb-5">
+        <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+            <h5 class="card-title d-flex align-items-center gap-2 mb-0"><i class="fi fi-rr-time-fast text-info"></i> Recent Requests</h5>
+            {% if has_approved_profile %}
+            <a href="{% url 'request_assistance' %}" class="btn btn-sm btn-primary">+ New Request</a>
+            {% else %}
+            <span class="small text-slate-500">Profile verification required</span>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                {% if requests %}
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Program</th>
+                            <th>Barangay</th>
+                            <th>Reason</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-end pe-4">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                        <tr>
+                            <td class="ps-4"><strong class="text-slate-900">{{ req.program.name }}</strong></td>
+                            <td class="text-slate-600">{{ req.barangay.name|default:"" }}</td>
+                            <td class="text-slate-600">{{ req.reason|truncatewords:10 }}</td>
+                            <td class="text-center">
+                                {% if req.status == 'approved' %}
+                                <span class="badge bg-success text-white">{{ req.get_status_display }}</span>
+                                {% elif req.status == 'rejected' %}
+                                <span class="badge bg-danger text-white">{{ req.get_status_display }}</span>
+                                {% else %}
+                                <span class="badge bg-warning text-white">{{ req.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4 text-slate-500" style="font-size: 0.8125rem;">{{ req.date_submitted|date:"M d, Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-5">
+                    <div style="font-size: 3rem; color: #e2e8f0; margin-bottom: 1rem;"><i class="fi fi-rr-mailbox"></i></div>
+                    <h5 class="fw-bold mb-2 text-slate-900">No requests yet</h5>
+                    <p class="text-slate-500">Submit your first assistance request to get started.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3: MY PROFILE -->
+    <h3 class="section-title"><i class="fi fi-rr-user text-muted"></i> Beneficiary Profile</h3>
+    <div class="panel-card gap-32">
+        <div class="panel-header">
+            <h5 class="d-flex align-items-center gap-2"><i class="fi fi-rr-badge-check text-success"></i> My Information</h5>
+        </div>
+        <div class="p-4" style="background-color: transparent;">
+            {% if beneficiary_profile %}
+            <div class="profile-info">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div>
+                        <h4 class="mb-2">{{ beneficiary_profile.full_name }}</h4>
+                        <p class="small">
+                            <i class="fi fi-rr-venus-mars text-primary me-1"></i>{{ beneficiary_profile.gender }} <span class="mx-2">•</span> 
+                            <i class="fi fi-rr-calendar text-primary me-1"></i>{{ beneficiary_profile.age }} years old
+                        </p>
+                        <p class="small m-0">
+                            <i class="fi fi-rr-marker text-primary me-1"></i>Barangay: <strong>{{ beneficiary_profile.barangay.name }}</strong>
+                        </p>
+                    </div>
+                    <div>
+                        {% if beneficiary_profile.status == 'approved' %}
+                        <span class="badge-vuln badge-success px-4 py-2 fs-6"><i class="fi fi-rr-check-circle me-1"></i> Verified</span>
+                        {% elif beneficiary_profile.status == 'rejected' %}
+                        <span class="badge-vuln badge-danger px-4 py-2 fs-6"><i class="fi fi-rr-cross-circle me-1"></i> Rejected</span>
+                        {% else %}
+                        <span class="badge-vuln badge-warning px-4 py-2 fs-6"><i class="fi fi-rr-time-fast me-1"></i> Under Review</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr style="border-color: var(--border); margin: 24px 0;">
+
+                {% if beneficiary_profile.status == 'pending' %}
+                <p style="color: var(--text-secondary); font-size: 0.9rem;" class="mb-3">Your beneficiary information is currently under review by the administration. You may edit your details if necessary.</p>
+                <div>
+                    <a href="{% url 'submit_beneficiary' %}" class="btn btn-primary btn-sm rounded-pill px-4"><i class="fi fi-rr-edit me-2"></i>Edit Information</a>
+                </div>
+                {% elif beneficiary_profile.status == 'approved' %}
+                <div class="d-flex align-items-center gap-3" style="color: #6ee7b7; background: rgba(16, 185, 129, 0.1); padding: 16px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <i class="fi fi-rr-badge-check fs-3"></i>
+                    <div>
+                        <strong>Profile Verified!</strong><br>
+                        <span class="small" style="color: var(--text-secondary);">You are fully eligible to request assistance for CSWDO programs.</span>
+                    </div>
+                </div>
+                {% elif beneficiary_profile.status == 'rejected' %}
+                <div class="d-flex align-items-center gap-3" style="color: #fca5a5; background: rgba(239, 68, 68, 0.1); padding: 16px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                    <i class="fi fi-rr-shield-exclamation fs-3"></i>
+                    <div>
+                        <strong>Verification Failed</strong><br>
+                        <span class="small" style="color: var(--text-secondary);">Your profile was not approved. Please contact the CSWDO office for clarification.</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <p style="color: var(--text-muted); margin-bottom: 24px;">You haven't submitted your beneficiary information yet.</p>
+                <a href="{% url 'submit_beneficiary' %}" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold">Submit Profile Now</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

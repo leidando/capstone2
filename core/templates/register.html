@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — CSWDO System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- UI Icons (Flaticon) -->
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.1.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2.0">
+    <script>
+        (function () {
+            var t = localStorage.getItem('cswdo-theme');
+            if (!t) {
+                t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+</head>
+
+<body>
+    <div class="auth-page position-relative">
+        <a href="/" class="btn btn-outline btn-sm position-absolute top-0 start-0 m-4 d-flex align-items-center rounded-pill px-4" style="z-index: 10;">
+            <i class="fi fi-rr-arrow-left me-2"></i> Back
+        </a>
+        <div class="auth-card" style="max-width: 540px;">
+            <div class="auth-brand">
+                <div class="auth-brand-icon">
+                    <img src="{% static 'images/cswdo_logo.png' %}" alt="CSWDO Logo"
+                        style="width: 100%; height: 100%; object-fit: contain;">
+                </div>
+                <h2>Create Account</h2>
+                <p>Register as a citizen of Tayabas City</p>
+            </div>
+
+            {% if messages %}
+            {% for msg in messages %}
+            <div class="alert alert-{{ msg.tags }} mb-4">{{ msg }}</div>
+            {% endfor %}
+            {% endif %}
+
+            <form method="POST" action="{% url 'register' %}" id="register-form">
+                {% csrf_token %}
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label class="form-label mb-2" for="reg-first-name" style="color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">
+                                <i class="fi fi-rr-user me-1"></i> First Name
+                            </label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                            <div class="form-error">{{ form.first_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label class="form-label mb-2" for="reg-last-name" style="color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">
+                                Last Name
+                            </label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                            <div class="form-error">{{ form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="form-label mb-2" for="reg-email" style="color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">
+                        <i class="fi fi-rr-envelope me-1"></i> Email Address
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                    <div class="form-error">{{ form.email.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="form-label mb-2" for="reg-username" style="color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">
+                        <i class="fi fi-rr-at me-1"></i> Username
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                    <div class="form-error">{{ form.username.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label class="form-label mb-2" for="reg-password" style="color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">
+                                <i class="fi fi-rr-lock me-1"></i> Password
+                            </label>
+                            {{ form.password }}
+                            {% if form.password.errors %}
+                            <div class="form-error">{{ form.password.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label class="form-label mb-2" for="reg-password-confirm" style="color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">
+                                Confirm
+                            </label>
+                            {{ form.password_confirm }}
+                            {% if form.password_confirm.errors %}
+                            <div class="form-error">{{ form.password_confirm.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="form-label mb-2" for="reg-barangay" style="color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">
+                        <i class="fi fi-rr-marker me-1"></i> Home Barangay
+                    </label>
+                    {{ form.barangay }}
+                    {% if form.barangay.errors %}
+                    <div class="form-error">{{ form.barangay.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group mb-4">
+                    <label class="form-label mb-2" for="reg-phone" style="color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">
+                        <i class="fi fi-rr-phone-call me-1"></i> Phone <span style="font-weight: 400; opacity: 0.6">(Optional)</span>
+                    </label>
+                    {{ form.phone }}
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-3 mt-2" id="register-submit" style="font-weight: 700;">
+                    Create Account <i class="fi fi-rr-arrow-right ms-2"></i>
+                </button>
+            </form>
+
+            <div class="auth-footer text-center mt-4">
+                Already have an account? <a href="{% url 'login' %}" class="fw-bold">Sign in</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+</body>
+
+</html>
