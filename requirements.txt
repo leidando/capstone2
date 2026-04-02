@@ -14,7 +14,7 @@ psycopg2-binary==2.9.10
 xhtml2pdf==0.2.17
 reportlab==4.4.10
 arabic-reshaper==3.0.0
-python-bidi==0.6.7
+python-bidi==0.4.2
 html5lib==1.1
 pypdf==6.9.2
 svglib==1.6.0
