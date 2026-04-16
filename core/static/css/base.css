@@ -8,34 +8,46 @@
 /* ── CSS Custom Properties ──────────────────────────────── */
 :root {
     /* Brand palette — Slate and Blue (Tailwind-like) */
-    --primary: #2563eb;       /* blue-600 */
-    --primary-light: #3b82f6; /* blue-500 */
-    --primary-dark: #1d4ed8;  /* blue-700 */
-    --accent: #10b981;        /* emerald-500 */
-    --accent-light: #34d399;  /* emerald-400 */
+    --primary: #2563eb;
+    /* blue-600 */
+    --primary-light: #3b82f6;
+    /* blue-500 */
+    --primary-dark: #1d4ed8;
+    /* blue-700 */
+    --accent: #10b981;
+    /* emerald-500 */
+    --accent-light: #34d399;
+    /* emerald-400 */
 
     /* Semantic */
-    --success: #10b981;       /* emerald-500 */
-    --warning: #f59e0b;       /* amber-500 */
-    --danger: #ef4444;        /* red-500 */
-    --info: #3b82f6;          /* blue-500 */
+    --success: #10b981;
+    /* emerald-500 */
+    --warning: #f59e0b;
+    /* amber-500 */
+    --danger: #ef4444;
+    /* red-500 */
+    --info: #3b82f6;
+    /* blue-500 */
 
     /* Sidebar - Old dark navy colors for readability */
-    --sidebar-bg: #001F3F;    /* Tayabas Navy */
-    --sidebar-hover: rgba(255, 255, 255, 0.1); 
-    --sidebar-active: rgba(255, 255, 255, 0.15); 
-    --sidebar-text: rgba(255, 255, 255, 0.65);   
-    --sidebar-text-active: #ffffff; 
+    --sidebar-bg: #001F3F;
+    /* Tayabas Navy */
+    --sidebar-hover: rgba(255, 255, 255, 0.1);
+    --sidebar-active: rgba(255, 255, 255, 0.15);
+    --sidebar-text: rgba(255, 255, 255, 0.65);
+    --sidebar-text-active: #ffffff;
     --sidebar-width: 260px;
 
     /* Surface */
-    --bg: #e5e7eb;            /* Grayish frontend */
-    --surface: #f3f4f6;       /* Off-white grayish card background instead of pure white */
+    --bg: #e5e7eb;
+    /* Grayish frontend */
+    --surface: #f3f4f6;
+    /* Off-white grayish card background instead of pure white */
     --surface-glass: rgba(243, 244, 246, 0.8);
-    --border: #d1d5db;        
-    --text: #1f2937;          
-    --text-secondary: #4b5563; 
-    --text-muted: #6b7280;    
+    --border: #d1d5db;
+    --text: #1f2937;
+    --text-secondary: #4b5563;
+    --text-muted: #6b7280;
 
     /* Spacing (Standardizing to 4px units) */
     --space-xs: 4px;
@@ -46,10 +58,14 @@
     --space-2xl: 48px;
 
     /* Radii (rounded-2xl and rounded-xl) */
-    --radius-sm: 0.375rem;     /* 6px */
-    --radius-md: 0.5rem;       /* 8px */
-    --radius-lg: 1rem;         /* 16px - rounded-2xl */
-    --radius-xl: 1.5rem;       /* 24px */
+    --radius-sm: 0.375rem;
+    /* 6px */
+    --radius-md: 0.5rem;
+    /* 8px */
+    --radius-lg: 1rem;
+    /* 16px - rounded-2xl */
+    --radius-xl: 1.5rem;
+    /* 24px */
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -73,6 +89,8 @@
 html {
     font-size: 15px;
     -webkit-font-smoothing: antialiased;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 body {
@@ -81,6 +99,9 @@ body {
     color: var(--text);
     line-height: 1.6;
     min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+    margin: 0;
 }
 
 a {
@@ -191,5 +212,3 @@ a:hover {
 .w-full {
     width: 100%;
 }
-
-

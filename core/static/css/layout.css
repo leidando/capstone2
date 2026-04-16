@@ -1,5 +1,4 @@
 .layout {
-    display: flex;
     min-height: 100vh;
 }
 
@@ -139,8 +138,7 @@
 /* Main Content */
 .main {
     margin-left: var(--sidebar-width);
-    flex: 1;
-    min-width: 0;
+    min-height: 100vh;
 }
 
 /* Top Bar */
@@ -178,7 +176,7 @@
 /* Content Area */
 .content {
     padding: var(--space-xl);
-    max-width: 1400px;
+    box-sizing: border-box;
 }
 
 
