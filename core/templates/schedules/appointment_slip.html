@@ -1,0 +1,113 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Appointment Slip — CSWDO</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #fff; color: #1f2937; font-size: 13px; }
+        .slip { width: 100%; max-width: 600px; margin: 0 auto; padding: 24px; border: 2px solid #1d4ed8; }
+        .slip-header { display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #1d4ed8; padding-bottom: 16px; margin-bottom: 16px; }
+        .slip-logo { width: 60px; height: 60px; object-fit: contain; }
+        .slip-header h1 { font-size: 1.1rem; font-weight: 700; color: #1d4ed8; }
+        .slip-header p { font-size: 0.75rem; color: #6b7280; }
+        .slip-title { text-align: center; background: #1d4ed8; color: #fff; padding: 8px; font-weight: 700; font-size: 1rem; letter-spacing: 1px; margin-bottom: 16px; }
+        .slip-section { margin-bottom: 14px; }
+        .slip-section h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+        .slip-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .slip-row span:first-child { color: #6b7280; width: 40%; }
+        .slip-row span:last-child { font-weight: 600; text-align: right; }
+        .slip-status { display: inline-block; background: #1d4ed8; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; }
+        .slip-footer { border-top: 1px dashed #d1d5db; padding-top: 12px; margin-top: 14px; font-size: 0.75rem; color: #6b7280; text-align: center; }
+        .slip-barcode { text-align: center; font-size: 1.5rem; letter-spacing: 4px; color: #1d4ed8; font-weight: 700; margin: 8px 0; }
+        @media print {
+            body { background: #fff; }
+            .no-print { display: none; }
+            .slip { border: 2px solid #1d4ed8; }
+        }
+    </style>
+</head>
+<body>
+    <div class="slip" id="appointment-slip">
+        <div class="slip-header">
+            <img src="{% static 'images/cswdo_logo.png' %}" alt="CSWDO" class="slip-logo">
+            <div>
+                <h1>CITY SOCIAL WELFARE AND DEVELOPMENT OFFICE</h1>
+                <p>Tayabas City, Quezon Province</p>
+            </div>
+        </div>
+        <div class="slip-title">APPOINTMENT SLIP / CLAIMING SCHEDULE</div>
+
+        <div class="slip-section">
+            <h3>Beneficiary Information</h3>
+            <div class="slip-row">
+                <span>Full Name</span>
+                <span>{{ beneficiary.full_name }}</span>
+            </div>
+            <div class="slip-row">
+                <span>Barangay</span>
+                <span>{{ beneficiary.barangay.name|default:"—" }}</span>
+            </div>
+            <div class="slip-row">
+                <span>Age / Gender</span>
+                <span>{{ beneficiary.age }} / {{ beneficiary.gender }}</span>
+            </div>
+        </div>
+
+        <div class="slip-section">
+            <h3>Appointment Details</h3>
+            <div class="slip-row">
+                <span>Program</span>
+                <span>{{ sched.program.name }}</span>
+            </div>
+            <div class="slip-row">
+                <span>Date</span>
+                <span>{{ sched.schedule_date|date:"F d, Y"|default:"To Be Announced" }}</span>
+            </div>
+            <div class="slip-row">
+                <span>Time</span>
+                <span>{{ sched.get_time_slot_display|default:"To Be Announced" }}</span>
+            </div>
+            <div class="slip-row">
+                <span>Location</span>
+                <span>{{ sched.claim_location }}</span>
+            </div>
+            {% if sched.assigned_staff %}
+            <div class="slip-row">
+                <span>Assigned Staff</span>
+                <span>{{ sched.assigned_staff.get_full_name }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="slip-section" style="text-align:center">
+            <h3>Status</h3>
+            <span class="slip-status">{{ sched.get_status_display|upper }}</span>
+        </div>
+
+        {% if sched.remarks %}
+        <div class="slip-section">
+            <h3>Remarks</h3>
+            <p style="font-size:0.8rem;color:#4b5563">{{ sched.remarks }}</p>
+        </div>
+        {% endif %}
+
+        <div class="slip-barcode">SCH-{{ sched.pk|stringformat:"05d" }}</div>
+
+        <div class="slip-footer">
+            <p>This is an official appointment slip from the CSWDO Tayabas City.</p>
+            <p>Please present this slip on your scheduled appointment date.</p>
+            <p>Generated on: {% now "F d, Y" %}</p>
+        </div>
+    </div>
+
+    <div class="no-print" style="text-align:center;margin:16px">
+        <button onclick="window.print()" style="padding:8px 24px;background:#1d4ed8;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px" id="print-btn">
+            🖨 Print Slip
+        </button>
+        <a href="{% url 'user_appointment_detail' sched.pk %}" style="margin-left:12px;color:#1d4ed8;text-decoration:none" id="back-link">← Back to Appointment</a>
+    </div>
+</body>
+</html>

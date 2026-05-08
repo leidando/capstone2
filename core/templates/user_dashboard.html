@@ -1,12 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}My Dashboard  CSWDO{% endblock %}
+{% block title %}My Dashboard — CSWDO{% endblock %}
 {% block page_title %}My Dashboard{% endblock %}
 {% block breadcrumb %}Home / Dashboard{% endblock %}
-
-{% block extra_head %}
-{% endblock %}
 
 {% block content %}
 <div class="dashboard-container position-relative" style="z-index: 1;">
@@ -22,7 +19,6 @@
                 <div class="metric-text">Register as a beneficiary under a CSWDO program</div>
             </a>
         </div>
-        
         <div class="col-12 col-md-4">
             {% if has_approved_profile %}
             <a href="{% url 'request_assistance' %}" class="metric-card mc-action-request" id="action-request-assistance">
@@ -38,17 +34,50 @@
             </div>
             {% endif %}
         </div>
-        
         <div class="col-12 col-md-4">
-            <a href="{% url 'map' %}" class="metric-card mc-action-map" id="action-view-map">
-                <div class="metric-icon"><i class="fi fi-rr-map"></i></div>
-                <div class="metric-label">View Map</div>
-                <div class="metric-text">See beneficiary distribution across Tayabas City</div>
+            <a href="{% url 'user_appointments' %}" class="metric-card mc-action-map" id="action-view-appointments">
+                <div class="metric-icon"><i class="fi fi-rr-calendar"></i></div>
+                <div class="metric-label">My Appointments</div>
+                <div class="metric-text">View your scheduled claiming appointments</div>
             </a>
         </div>
     </div>
 
-    <!-- SECTION 2: MY REQUESTS -->
+    <!-- SECTION 2: UPCOMING APPOINTMENT BANNER -->
+    {% if upcoming_appointment %}
+    <div class="card mb-5" style="border-left: 4px solid var(--primary); background: linear-gradient(135deg, rgba(37,99,235,0.04), rgba(16,185,129,0.04));" id="upcoming-appointment-card">
+        <div class="card-body px-4 py-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <div class="small text-primary fw-semibold mb-1">
+                        <i class="fi fi-rr-calendar me-1"></i> UPCOMING APPOINTMENT
+                    </div>
+                    <h5 class="fw-bold mb-1">{{ upcoming_appointment.program.name }}</h5>
+                    <p class="mb-0 small text-muted">
+                        <i class="fi fi-rr-calendar me-1"></i>
+                        {{ upcoming_appointment.schedule_date|date:"F d, Y" }}
+                        &nbsp;•&nbsp;
+                        <i class="fi fi-rr-clock me-1"></i>
+                        {{ upcoming_appointment.get_time_slot_display }}
+                        &nbsp;•&nbsp;
+                        <i class="fi fi-rr-marker me-1"></i>
+                        {{ upcoming_appointment.claim_location }}
+                    </p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'user_appointment_detail' upcoming_appointment.pk %}" class="btn btn-primary btn-sm" id="view-upcoming-appt">
+                        <i class="fi fi-rr-eye me-1"></i> View Details
+                    </a>
+                    <a href="{% url 'print_appointment_slip' upcoming_appointment.pk %}" class="btn btn-outline btn-sm" target="_blank" id="print-upcoming-slip">
+                        <i class="fi fi-rr-print me-1"></i> Print Slip
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- SECTION 3: MY REQUESTS -->
     <h3 class="section-title mb-4"><i class="fi fi-rr-clipboard-list text-slate-500"></i> My Assistance Requests</h3>
     <div class="card mb-5">
         <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
@@ -69,25 +98,39 @@
                             <th>Barangay</th>
                             <th>Reason</th>
                             <th class="text-center">Status</th>
+                            <th class="text-center">Schedule</th>
                             <th class="text-end pe-4">Date</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for req in requests %}
                         <tr>
-                            <td class="ps-4"><strong class="text-slate-900">{{ req.program.name }}</strong></td>
-                            <td class="text-slate-600">{{ req.barangay.name|default:"" }}</td>
-                            <td class="text-slate-600">{{ req.reason|truncatewords:10 }}</td>
+                            <td class="ps-4"><strong style="color:var(--text)">{{ req.program.name }}</strong></td>
+                            <td style="color:var(--text-secondary)">{{ req.barangay.name|default:"" }}</td>
+                            <td style="color:var(--text-secondary)">{{ req.reason|truncatewords:10 }}</td>
                             <td class="text-center">
                                 {% if req.status == 'approved' %}
                                 <span class="badge bg-success text-white">{{ req.get_status_display }}</span>
                                 {% elif req.status == 'rejected' %}
                                 <span class="badge bg-danger text-white">{{ req.get_status_display }}</span>
                                 {% else %}
-                                <span class="badge bg-warning text-white">{{ req.get_status_display }}</span>
+                                <span class="badge bg-warning text-dark">{{ req.get_status_display }}</span>
                                 {% endif %}
                             </td>
-                            <td class="text-end pe-4 text-slate-500" style="font-size: 0.8125rem;">{{ req.date_submitted|date:"M d, Y" }}</td>
+                            <td class="text-center">
+                                {% if req.status == 'approved' %}
+                                    {% if req.schedule %}
+                                    <a href="{% url 'user_appointment_detail' req.schedule.pk %}" class="badge bg-primary text-white text-decoration-none" style="font-size:0.7rem">
+                                        {{ req.schedule.schedule_date|date:"M d"|default:"View" }}
+                                    </a>
+                                    {% else %}
+                                    <span class="small text-muted">Pending Schedule</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4 text-muted" style="font-size: 0.8125rem;">{{ req.date_submitted|date:"M d, Y" }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -95,15 +138,51 @@
                 {% else %}
                 <div class="text-center py-5">
                     <div style="font-size: 3rem; color: #e2e8f0; margin-bottom: 1rem;"><i class="fi fi-rr-mailbox"></i></div>
-                    <h5 class="fw-bold mb-2 text-slate-900">No requests yet</h5>
-                    <p class="text-slate-500">Submit your first assistance request to get started.</p>
+                    <h5 class="fw-bold mb-2" style="color:var(--text)">No requests yet</h5>
+                    <p style="color:var(--text-secondary)">Submit your first assistance request to get started.</p>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- SECTION 3: MY PROFILE -->
+    <!-- SECTION 4: MY SERVICE HISTORY PREVIEW -->
+    {% if service_history_count > 0 %}
+    <h3 class="section-title mb-4"><i class="fi fi-rr-time-past text-slate-500"></i> Service History</h3>
+    <div class="card mb-5">
+        <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 d-flex align-items-center gap-2">
+                <i class="fi fi-rr-check-circle text-success"></i> Assistance Received
+                <span class="badge bg-success rounded-pill ms-1">{{ service_history_count }}</span>
+            </h5>
+            <a href="{% url 'user_service_history' %}" class="btn btn-sm btn-outline" id="view-full-history-btn">View All</a>
+        </div>
+        <div class="card-body p-4">
+            <div class="timeline" id="dashboard-history-timeline">
+                {% for h in recent_history %}
+                <div class="timeline-item" id="dash-history-{{ h.pk }}">
+                    <div class="timeline-dot bg-success"></div>
+                    <div class="timeline-content" style="padding:12px 16px;background:var(--surface);border-radius:8px;border:1px solid var(--border)">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold small">{{ h.program.name }}</div>
+                                <div class="small text-muted">{{ h.claim_date|date:"M d, Y"|default:"—" }}</div>
+                            </div>
+                            {% if h.amount_value > 0 %}
+                            <span class="fw-bold text-success small">₱{{ h.amount_value|floatformat:0 }}</span>
+                            {% else %}
+                            <span class="badge bg-success text-white" style="font-size:.65rem">Completed</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- SECTION 5: MY PROFILE -->
     <h3 class="section-title"><i class="fi fi-rr-user text-muted"></i> Beneficiary Profile</h3>
     <div class="panel-card gap-32">
         <div class="panel-header">
@@ -116,7 +195,7 @@
                     <div>
                         <h4 class="mb-2">{{ beneficiary_profile.full_name }}</h4>
                         <p class="small">
-                            <i class="fi fi-rr-venus-mars text-primary me-1"></i>{{ beneficiary_profile.gender }} <span class="mx-2">•</span> 
+                            <i class="fi fi-rr-venus-mars text-primary me-1"></i>{{ beneficiary_profile.gender }} <span class="mx-2">•</span>
                             <i class="fi fi-rr-calendar text-primary me-1"></i>{{ beneficiary_profile.age }} years old
                         </p>
                         <p class="small m-0">
@@ -137,10 +216,8 @@
                 <hr style="border-color: var(--border); margin: 24px 0;">
 
                 {% if beneficiary_profile.status == 'pending' %}
-                <p style="color: var(--text-secondary); font-size: 0.9rem;" class="mb-3">Your beneficiary information is currently under review by the administration. You may edit your details if necessary.</p>
-                <div>
-                    <a href="{% url 'submit_beneficiary' %}" class="btn btn-primary btn-sm rounded-pill px-4"><i class="fi fi-rr-edit me-2"></i>Edit Information</a>
-                </div>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;" class="mb-3">Your beneficiary information is currently under review. You may edit your details if necessary.</p>
+                <a href="{% url 'submit_beneficiary' %}" class="btn btn-primary btn-sm rounded-pill px-4"><i class="fi fi-rr-edit me-2"></i>Edit Information</a>
                 {% elif beneficiary_profile.status == 'approved' %}
                 <div class="d-flex align-items-center gap-3" style="color: #6ee7b7; background: rgba(16, 185, 129, 0.1); padding: 16px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.2);">
                     <i class="fi fi-rr-badge-check fs-3"></i>

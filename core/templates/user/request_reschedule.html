@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Request Reschedule — CSWDO{% endblock %}
+{% block page_title %}Request Reschedule{% endblock %}
+{% block breadcrumb %}Home / Appointments / Reschedule{% endblock %}
+{% block content %}
+<div class="dashboard-container">
+    <div class="row g-4 justify-content-center">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-1">
+                        <i class="fi fi-rr-refresh text-warning"></i> Request a Reschedule
+                    </h5>
+                    <p class="small text-muted mb-0">
+                        For: <strong>{{ sched.program.name }}</strong> — {{ sched.schedule_date|date:"F d, Y"|default:"Date TBD" }}
+                    </p>
+                </div>
+                <div class="card-body p-4">
+                    {% if sched.reschedule_count >= 2 %}
+                    <div class="alert alert-warning">
+                        <i class="fi fi-rr-exclamation me-2"></i>
+                        <strong>Note:</strong> This appointment has already been rescheduled {{ sched.reschedule_count }} time(s). Further rescheduling is subject to admin approval.
+                    </div>
+                    {% endif %}
+                    <form method="POST" id="reschedule-form">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="reschedule-reason">Reason for Reschedule <span class="text-danger">*</span></label>
+                            {{ form.reason }}
+                            {% if form.reason.errors %}<div class="text-danger small mt-1">{{ form.reason.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="reschedule-preferred-date">Preferred Date</label>
+                            {{ form.preferred_date }}
+                            <div class="form-text">Optional. We'll try to accommodate your preferred date.</div>
+                        </div>
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-warning px-5" id="submit-reschedule-btn">
+                                <i class="fi fi-rr-paper-plane me-2"></i> Submit Request
+                            </button>
+                            <a href="{% url 'user_appointment_detail' sched.pk %}" class="btn btn-outline" id="cancel-reschedule-btn">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

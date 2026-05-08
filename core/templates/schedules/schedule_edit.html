@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Edit Schedule #{{ sched.pk }} — CSWDO{% endblock %}
+{% block page_title %}Edit Appointment{% endblock %}
+{% block breadcrumb %}Schedules / #{{ sched.pk }} / Edit{% endblock %}
+{% block content %}
+<div class="dashboard-container">
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-edit text-primary"></i> Edit / Reschedule Appointment
+                    </h5>
+                    <p class="small text-muted mb-0">Rescheduled {{ sched.reschedule_count }} time(s)</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" id="schedule-edit-form">
+                        {% csrf_token %}
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {% for field in form %}{% for error in field.errors %}<div>{{ field.label }}: {{ error }}</div>{% endfor %}{% endfor %}
+                        </div>
+                        {% endif %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="sched-date">Schedule Date</label>
+                                {{ form.schedule_date }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="sched-slot">Time Slot</label>
+                                {{ form.time_slot }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="sched-location">Claim Location</label>
+                                {{ form.claim_location }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="sched-staff">Assigned Staff</label>
+                                {{ form.assigned_staff }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="sched-max">Max Per Slot</label>
+                                {{ form.max_per_slot }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="sched-status">Status</label>
+                                {{ form.status }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="sched-remarks">Remarks</label>
+                                {{ form.remarks }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="sched-admin-notes">Admin Notes</label>
+                                {{ form.admin_notes }}
+                            </div>
+                        </div>
+                        <div class="d-flex gap-3 mt-4">
+                            <button type="submit" class="btn btn-primary px-5" id="save-edit-btn">
+                                <i class="fi fi-rr-check me-2"></i> Save Changes
+                            </button>
+                            <a href="{% url 'schedule_detail' sched.pk %}" class="btn btn-outline" id="cancel-edit-btn">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="card-title mb-0"><i class="fi fi-rr-user text-info"></i> Appointment Summary</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <table class="table table-sm mb-0">
+                        <tr><td class="text-muted small">Beneficiary</td><td class="fw-semibold">{{ sched.beneficiary.full_name }}</td></tr>
+                        <tr><td class="text-muted small">Program</td><td>{{ sched.program.name }}</td></tr>
+                        <tr><td class="text-muted small">Barangay</td><td>{{ sched.barangay.name|default:"—" }}</td></tr>
+                        <tr><td class="text-muted small">Current Status</td><td><span class="badge bg-primary text-white">{{ sched.get_status_display }}</span></td></tr>
+                        <tr><td class="text-muted small">Current Date</td><td>{{ sched.schedule_date|date:"M d, Y"|default:"Not Set" }}</td></tr>
+                        <tr><td class="text-muted small">Current Slot</td><td>{{ sched.get_time_slot_display|default:"—" }}</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

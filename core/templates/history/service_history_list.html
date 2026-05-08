@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Service History — CSWDO{% endblock %}
+{% block page_title %}Service History{% endblock %}
+{% block breadcrumb %}Admin / Service History{% endblock %}
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body p-3">
+            <form method="GET" class="row g-2 align-items-end" id="history-filter-form">
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-semibold">Search Beneficiary / Program</label>
+                    <input type="text" name="search" class="form-control form-control-sm" value="{{ search }}" placeholder="Name or program..." id="history-search">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold">Program</label>
+                    <select name="program" class="form-select form-select-sm" id="history-program">
+                        <option value="">All Programs</option>
+                        {% for p in programs %}<option value="{{ p.pk }}" {% if program_filter == p.pk %}selected{% endif %}>{{ p.name|truncatewords:4 }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold">Barangay</label>
+                    <select name="barangay" class="form-select form-select-sm" id="history-barangay">
+                        <option value="">All Barangays</option>
+                        {% for b in barangays %}<option value="{{ b.pk }}" {% if barangay_filter == b.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold">From Date</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}" id="history-date-from">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold">To Date</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}" id="history-date-to">
+                </div>
+                <div class="col-12 col-md-1 d-flex gap-1">
+                    <button type="submit" class="btn btn-primary btn-sm w-100" id="history-filter-btn">Filter</button>
+                    <a href="{% url 'admin_service_history' %}" class="btn btn-outline btn-sm" id="history-clear-btn">✕</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+        <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                <i class="fi fi-rr-time-past text-success"></i> Assistance History Records
+                <span class="badge bg-success rounded-pill ms-1">{{ total_count }}</span>
+            </h5>
+            <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-sm btn-outline" id="export-history-csv">
+                <i class="fi fi-rr-download me-1"></i> Export CSV
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                {% if page_obj %}
+                <table class="table mb-0" id="history-table">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Beneficiary</th>
+                            <th>Program</th>
+                            <th>Claim Date</th>
+                            <th class="text-center">Amount</th>
+                            <th>Staff</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in page_obj %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-semibold" style="color:var(--text)">{{ h.beneficiary.full_name }}</div>
+                                <div class="small text-muted">{{ h.beneficiary.barangay.name|default:"" }}</div>
+                            </td>
+                            <td class="small" style="color:var(--text-secondary)">{{ h.program.name|truncatewords:5 }}</td>
+                            <td>
+                                {% if h.claim_date %}
+                                <span class="small fw-medium">{{ h.claim_date|date:"M d, Y" }}</span>
+                                {% else %}<span class="text-muted small">—</span>{% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="fw-semibold text-success">₱{{ h.amount_value|floatformat:2 }}</span>
+                            </td>
+                            <td class="small text-muted">{{ h.assigned_staff.get_full_name|default:"—" }}</td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'beneficiary_service_history' h.beneficiary.pk %}" class="btn btn-sm btn-outline" id="view-history-{{ h.pk }}" title="View History">
+                                    <i class="fi fi-rr-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-5">
+                    <div style="font-size:3rem;color:#e2e8f0;margin-bottom:1rem"><i class="fi fi-rr-time-past"></i></div>
+                    <h5 class="fw-bold mb-2">No service history found</h5>
+                    <p class="text-muted">Records are created when schedules are marked as completed.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-transparent border-0 px-4 py-3 d-flex justify-content-between align-items-center">
+            <small class="text-muted">{{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ total_count }}</small>
+            <nav><ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}" id="page-prev">‹</a></li>{% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}" id="page-next">›</a></li>{% endif %}
+            </ul></nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

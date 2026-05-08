@@ -6,22 +6,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CSWDO System{% endblock %}</title>
-    <meta name="description" content="CSWDO Beneficiary Management System  Tayabas City">
+    <meta name="description" content="CSWDO Beneficiary Management System — Tayabas City">
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <!-- Flaticon UIcons -->
-    <link rel='stylesheet'
-        href='https://cdn-uicons.flaticon.com/2.1.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.1.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
     <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Tom Select -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css">
     <!-- Custom CSS (loaded AFTER Bootstrap to override) -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=3.2">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=4.0">
     {% block extra_head %}{% endblock %}
-    <!-- Theme Script Erased (Enforcing clean light theme) -->
 </head>
 
 <body x-data="{ sidebarOpen: false }">
@@ -64,6 +62,16 @@
                     id="nav-requests">
                     <span class="icon"><i class="fi fi-rr-clipboard-list"></i></span> Requests
                 </a>
+                <a href="{% url 'schedule_list' %}"
+                    class="sidebar-link {% if 'schedule' in request.resolver_match.url_name %}active{% endif %}"
+                    id="nav-schedules">
+                    <span class="icon"><i class="fi fi-rr-calendar-lines"></i></span> Schedules
+                </a>
+                <a href="{% url 'admin_service_history' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'admin_service_history' %}active{% endif %}"
+                    id="nav-service-history">
+                    <span class="icon"><i class="fi fi-rr-time-past"></i></span> Service History
+                </a>
                 <a href="{% url 'program_list' %}"
                     class="sidebar-link {% if request.resolver_match.url_name == 'program_list' or request.resolver_match.url_name == 'program_add' or request.resolver_match.url_name == 'program_edit' %}active{% endif %}"
                     id="nav-programs">
@@ -87,9 +95,6 @@
                     <span class="icon"><i class="fi fi-rr-map"></i></span> Geospatial Map
                 </a>
 
-
-
-
                 {% elif user.is_authenticated and user.is_staff or user.profile.is_staff_role %}
                 <!-- ═══ Staff Navigation ═══ -->
                 <div class="sidebar-label">Dashboard</div>
@@ -97,6 +102,13 @@
                     class="sidebar-link {% if request.resolver_match.url_name == 'staff_dashboard' %}active{% endif %}"
                     id="nav-staff-dashboard">
                     <span class="icon"><i class="fi fi-rr-stats"></i></span> Staff Dashboard
+                </a>
+
+                <div class="sidebar-label">Management</div>
+                <a href="{% url 'schedule_list' %}"
+                    class="sidebar-link {% if 'schedule' in request.resolver_match.url_name %}active{% endif %}"
+                    id="nav-staff-schedules">
+                    <span class="icon"><i class="fi fi-rr-calendar-lines"></i></span> Schedules
                 </a>
 
                 <div class="sidebar-label">View</div>
@@ -125,6 +137,18 @@
                     class="sidebar-link {% if request.resolver_match.url_name == 'request_assistance' %}active{% endif %}"
                     id="nav-request-assistance">
                     <span class="icon"><i class="fi fi-rr-handshake"></i></span> Request Assistance
+                </a>
+
+                <div class="sidebar-label">Appointments</div>
+                <a href="{% url 'user_appointments' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'user_appointments' or request.resolver_match.url_name == 'user_appointment_detail' %}active{% endif %}"
+                    id="nav-user-appointments">
+                    <span class="icon"><i class="fi fi-rr-calendar"></i></span> My Appointments
+                </a>
+                <a href="{% url 'user_service_history' %}"
+                    class="sidebar-link {% if request.resolver_match.url_name == 'user_service_history' %}active{% endif %}"
+                    id="nav-user-history">
+                    <span class="icon"><i class="fi fi-rr-time-past"></i></span> Service History
                 </a>
 
                 <div class="sidebar-label">View</div>
@@ -166,6 +190,38 @@
                     <!-- Google Translate (user side only) -->
                     <div id="google_translate_element"></div>
                     {% endif %}
+
+                    <!-- ── Notification Bell ─────────────────── -->
+                    {% if user.is_authenticated %}
+                    <div class="notif-wrapper" id="notif-wrapper" x-data="{ open: false }">
+                        <button class="notif-btn" @click="open = !open; if(open) loadNotifications()" id="notif-bell-btn" aria-label="Notifications">
+                            <i class="fi fi-rr-bell"></i>
+                            <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+                        </button>
+                        <!-- Dropdown -->
+                        <div class="notif-dropdown" x-show="open" @click.outside="open = false"
+                            x-transition:enter="transition ease-out duration-150"
+                            x-transition:enter-start="opacity-0 transform scale-95"
+                            x-transition:enter-end="opacity-100 transform scale-100"
+                            x-transition:leave="transition ease-in duration-100"
+                            x-transition:leave-start="opacity-100"
+                            x-transition:leave-end="opacity-0"
+                            id="notif-dropdown" style="display:none">
+                            <div class="notif-dropdown-header">
+                                <span class="fw-semibold">Notifications</span>
+                                <button class="notif-mark-all-btn" onclick="markAllRead()" id="mark-all-read-btn">Mark all read</button>
+                            </div>
+                            <div class="notif-list" id="notif-list">
+                                <div class="notif-empty" id="notif-loading">
+                                    <i class="fi fi-rr-spinner"></i> Loading…
+                                </div>
+                            </div>
+                            <div class="notif-dropdown-footer">
+                                <span class="small text-muted" id="notif-unread-count"></span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </header>
 
@@ -196,12 +252,14 @@
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <!-- Tom Select -->
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
     <script>
         // Auto-dismiss alerts
         document.querySelectorAll('.alert').forEach(el => {
             setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(-8px)'; setTimeout(() => el.remove(), 300); }, 5000);
         });
-        // Activate Tom Select on all barangay & program selects
+
+        // Tom Select on barangay & program selects
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('select[id*="barangay"], select[id*="program"], select.ts-select').forEach(function (el) {
                 if (!el.tomselect) {
@@ -213,6 +271,114 @@
                 }
             });
         });
+
+        // ── Notification System ──────────────────────────────
+        const NOTIF_API = '{% url "api_notifications" %}';
+        const READ_ALL_API = '{% url "mark_all_notifications_read" %}';
+        const CSRF = '{{ csrf_token }}';
+
+        function loadNotifications() {
+            fetch(NOTIF_API)
+                .then(r => r.json())
+                .then(data => {
+                    const badge = document.getElementById('notif-badge');
+                    const list = document.getElementById('notif-list');
+                    const count = document.getElementById('notif-unread-count');
+
+                    // Update badge
+                    if (data.unread_count > 0) {
+                        badge.style.display = 'flex';
+                        badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                    if (count) count.textContent = data.unread_count > 0 ? `${data.unread_count} unread` : 'All caught up!';
+
+                    // Render list
+                    if (data.notifications.length === 0) {
+                        list.innerHTML = '<div class="notif-empty"><i class="fi fi-rr-bell-ring"></i><p>No notifications yet</p></div>';
+                        return;
+                    }
+                    list.innerHTML = data.notifications.map(n => `
+                        <div class="notif-item ${n.is_read ? '' : 'unread'}" id="notif-${n.id}" onclick="markRead(${n.id}, '${n.url}')">
+                            <div class="notif-icon-wrap ${getNotifColor(n.type)}">
+                                <i class="fi ${getNotifIcon(n.type)}"></i>
+                            </div>
+                            <div class="notif-text">
+                                <div class="notif-title">${n.title}</div>
+                                <div class="notif-msg">${n.message.substring(0,80)}${n.message.length>80?'…':''}</div>
+                                <div class="notif-time">${n.created_at}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                });
+        }
+
+        function markRead(id, url) {
+            fetch(`/api/notifications/${id}/read/`, { method: 'POST', headers: { 'X-CSRFToken': CSRF } })
+                .then(() => {
+                    document.getElementById(`notif-${id}`)?.classList.remove('unread');
+                    loadNotifications();
+                    if (url) window.location.href = url;
+                });
+        }
+
+        function markAllRead() {
+            fetch(READ_ALL_API, { method: 'POST', headers: { 'X-CSRFToken': CSRF } })
+                .then(() => loadNotifications());
+        }
+
+        function getNotifIcon(type) {
+            const icons = {
+                new_request: 'fi-rr-paper-plane',
+                request_approved: 'fi-rr-check-circle',
+                request_rejected: 'fi-rr-cross-circle',
+                schedule_assigned: 'fi-rr-calendar',
+                schedule_reminder: 'fi-rr-clock',
+                schedule_missed: 'fi-rr-exclamation',
+                claim_completed: 'fi-rr-badge-check',
+                reschedule_request: 'fi-rr-refresh',
+                pending_approval: 'fi-rr-hourglass',
+                general: 'fi-rr-bell',
+            };
+            return icons[type] || 'fi-rr-bell';
+        }
+
+        function getNotifColor(type) {
+            const colors = {
+                request_approved: 'notif-green',
+                claim_completed: 'notif-green',
+                request_rejected: 'notif-red',
+                schedule_missed: 'notif-red',
+                schedule_assigned: 'notif-blue',
+                schedule_reminder: 'notif-blue',
+                new_request: 'notif-yellow',
+                reschedule_request: 'notif-yellow',
+                pending_approval: 'notif-yellow',
+            };
+            return colors[type] || 'notif-blue';
+        }
+
+        // Poll unread count every 60s
+        function pollUnreadCount() {
+            fetch(NOTIF_API)
+                .then(r => r.json())
+                .then(data => {
+                    const badge = document.getElementById('notif-badge');
+                    if (badge) {
+                        if (data.unread_count > 0) {
+                            badge.style.display = 'flex';
+                            badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                }).catch(() => {});
+        }
+        {% if user.is_authenticated %}
+        pollUnreadCount();
+        setInterval(pollUnreadCount, 60000);
+        {% endif %}
     </script>
 
     <!-- Google Translate API (user side) -->
@@ -227,8 +393,7 @@
             }, 'google_translate_element');
         }
     </script>
-    <script type="text/javascript"
-        src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     {% endif %}
     {% block extra_scripts %}{% endblock %}
 </body>

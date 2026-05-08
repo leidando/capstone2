@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}My Service History — CSWDO{% endblock %}
+{% block page_title %}My Service History{% endblock %}
+{% block breadcrumb %}Home / Service History{% endblock %}
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-4">
+            <div class="metric-card mc-green">
+                <div class="metric-icon"><i class="fi fi-rr-check-circle"></i></div>
+                <div class="metric-label">Total Claims</div>
+                <div class="metric-value">{{ total_received }}</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="metric-card mc-blue">
+                <div class="metric-icon"><i class="fi fi-rr-folder"></i></div>
+                <div class="metric-label">Programs</div>
+                <div class="metric-value">{{ programs_helped }}</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="metric-card mc-teal">
+                <div class="metric-icon"><i class="fi fi-rr-coin"></i></div>
+                <div class="metric-label">Total Received</div>
+                <div class="metric-value" style="font-size:1.1rem">₱{{ total_amount|floatformat:0 }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                <i class="fi fi-rr-time-past text-success"></i> Assistance History Timeline
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            {% if history %}
+            <div class="timeline" id="user-history-timeline">
+                {% for h in history %}
+                <div class="timeline-item" id="user-history-{{ h.pk }}">
+                    <div class="timeline-dot bg-success"></div>
+                    <div class="timeline-content card p-3 mb-0">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ h.program.name }}</h6>
+                                <span class="badge bg-success text-white small">Claim Completed</span>
+                            </div>
+                            <div class="text-end">
+                                <div class="small fw-medium text-muted">{{ h.claim_date|date:"F d, Y"|default:"—" }}</div>
+                                {% if h.amount_value > 0 %}
+                                <div class="fw-bold text-success mt-1">₱{{ h.amount_value|floatformat:2 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if h.assigned_staff %}
+                        <div class="small text-muted mt-2"><i class="fi fi-rr-id-badge me-1"></i> Processed by: {{ h.assigned_staff.get_full_name }}</div>
+                        {% endif %}
+                        {% if h.remarks %}
+                        <div class="small text-muted mt-1"><i class="fi fi-rr-comment me-1"></i> {{ h.remarks }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div style="font-size:3.5rem;color:#e2e8f0;margin-bottom:1.5rem"><i class="fi fi-rr-time-past"></i></div>
+                <h5 class="fw-bold mb-2">No service history yet</h5>
+                <p class="text-muted mb-4">Once you complete a claiming appointment, your history will appear here.</p>
+                <a href="{% url 'user_appointments' %}" class="btn btn-primary btn-sm" id="view-appointments-btn">View Appointments</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

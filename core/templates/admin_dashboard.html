@@ -58,6 +58,82 @@
             </div>
         </div>
     </div>
+    
+    <!-- SECTION 1b: SCHEDULING & OPERATIONS -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-calendar-clock text-primary"></i> Today's Appointments
+                        <span class="badge bg-primary rounded-pill ms-1">{{ today_schedules_count }}</span>
+                    </h5>
+                    <a href="{% url 'schedule_list' %}" class="btn btn-sm btn-outline" id="view-all-schedules">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Beneficiary</th>
+                                    <th>Program</th>
+                                    <th>Time Slot</th>
+                                    <th class="text-end pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in today_schedules %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-slate-900">{{ s.beneficiary.full_name }}</div>
+                                        <div class="small text-muted">{{ s.beneficiary.barangay.name|default:"" }}</div>
+                                    </td>
+                                    <td class="small text-slate-500">{{ s.program.name|truncatewords:4 }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ s.get_time_slot_display }}</span></td>
+                                    <td class="text-end pe-4">
+                                        <a href="{% url 'schedule_detail' s.pk %}" class="btn btn-sm btn-outline-primary" id="go-sched-{{ s.pk }}"><i class="fi fi-rr-eye"></i></a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center py-5 text-muted">No appointments scheduled for today.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-refresh text-warning"></i> Reschedule Requests
+                        <span class="badge bg-warning text-dark rounded-pill ms-1">{{ reschedule_requests_count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% for r in reschedule_requests %}
+                    <div class="d-flex align-items-start gap-3 mb-3 pb-3 border-bottom last-no-border">
+                        <div class="bg-warning-subtle text-warning rounded-circle p-2" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center">
+                            <i class="fi fi-rr-refresh"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold small">{{ r.beneficiary.full_name }}</div>
+                            <div class="small text-muted mb-1">{{ r.program.name|truncatewords:3 }}</div>
+                            <div class="small text-slate-500 italic">"{{ r.reschedule_reason|truncatewords:8 }}"</div>
+                        </div>
+                        <a href="{% url 'schedule_edit' r.pk %}" class="btn btn-sm btn-outline-warning" id="handle-resched-{{ r.pk }}"><i class="fi fi-rr-arrow-right"></i></a>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">
+                        <div class="text-muted mb-2"><i class="fi fi-rr-check-circle fs-3"></i></div>
+                        <p class="small text-muted mb-0">All reschedule requests cleared.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- SECTION 2: INSIGHTS PANEL -->
     <div class="card p-4 mb-5" style="border-left: 4px solid var(--warning);">

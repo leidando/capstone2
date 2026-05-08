@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ beneficiary.full_name }} — Service History{% endblock %}
+{% block page_title %}Beneficiary History{% endblock %}
+{% block breadcrumb %}Admin / History / {{ beneficiary.full_name }}{% endblock %}
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- Beneficiary Banner -->
+    <div class="card mb-4" style="border-left:4px solid var(--primary)">
+        <div class="card-body px-4 py-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="sidebar-avatar" style="width:56px;height:56px;font-size:1.3rem">
+                        {{ beneficiary.full_name.0 }}
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1">{{ beneficiary.full_name }}</h4>
+                        <p class="small text-muted mb-0">
+                            <i class="fi fi-rr-marker me-1"></i> {{ beneficiary.barangay.name|default:"—" }} &nbsp;•&nbsp;
+                            <i class="fi fi-rr-venus-mars me-1"></i> {{ beneficiary.gender }}, {{ beneficiary.age }} yrs &nbsp;•&nbsp;
+                            <span class="badge {% if beneficiary.vulnerability_level == 'critical' %}bg-danger{% elif beneficiary.vulnerability_level == 'high' %}bg-warning text-dark{% elif beneficiary.vulnerability_level == 'medium' %}bg-info{% else %}bg-success{% endif %} text-white">{{ beneficiary.vulnerability_level|title }} Risk</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="d-flex gap-3 flex-wrap">
+                    <div class="text-center">
+                        <div class="metric-value" style="font-size:1.5rem;color:var(--success)">{{ total_received }}</div>
+                        <div class="metric-label">Claims Received</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="metric-value" style="font-size:1.5rem;color:var(--primary)">{{ total_requests_count }}</div>
+                        <div class="metric-label">Total Requests</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="metric-value" style="font-size:1.5rem;color:var(--warning)">₱{{ total_amount|floatformat:0 }}</div>
+                        <div class="metric-label">Total Received</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Timeline -->
+        <div class="col-lg-8">
+            <h5 class="section-title mb-3"><i class="fi fi-rr-time-past text-success"></i> Service History Timeline</h5>
+            {% if history %}
+            <div class="timeline" id="history-timeline">
+                {% for h in history %}
+                <div class="timeline-item" id="history-item-{{ h.pk }}">
+                    <div class="timeline-dot bg-success"></div>
+                    <div class="timeline-content card p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ h.program.name }}</h6>
+                                <span class="badge bg-success text-white small">Completed</span>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-muted">{{ h.claim_date|date:"M d, Y"|default:"—" }}</div>
+                                {% if h.amount_value > 0 %}
+                                <div class="fw-bold text-success">₱{{ h.amount_value|floatformat:2 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if h.assigned_staff %}
+                        <div class="small text-muted"><i class="fi fi-rr-id-badge me-1"></i> Processed by: {{ h.assigned_staff.get_full_name }}</div>
+                        {% endif %}
+                        {% if h.remarks %}
+                        <div class="small text-muted mt-1"><i class="fi fi-rr-comment me-1"></i> {{ h.remarks }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div style="font-size:3rem;color:#e2e8f0;margin-bottom:1rem"><i class="fi fi-rr-time-past"></i></div>
+                <h6 class="fw-bold text-muted">No service history yet</h6>
+                <p class="small text-muted">History is recorded when a scheduled transaction is marked completed.</p>
+            </div>
+            {% endif %}
+
+            <!-- Schedules -->
+            <h5 class="section-title mt-5 mb-3"><i class="fi fi-rr-calendar text-primary"></i> Appointment History</h5>
+            {% if schedules %}
+            <div class="timeline" id="schedules-timeline">
+                {% for s in schedules %}
+                <div class="timeline-item" id="sched-item-{{ s.pk }}">
+                    <div class="timeline-dot {% if s.status == 'completed' %}bg-success{% elif s.status == 'missed' %}bg-danger{% elif s.status == 'cancelled' %}bg-secondary{% else %}bg-primary{% endif %}"></div>
+                    <div class="timeline-content card p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ s.program.name }}</h6>
+                                <span class="badge {% if s.status == 'completed' %}bg-success{% elif s.status == 'missed' %}bg-danger{% elif s.status == 'cancelled' %}bg-secondary{% elif s.status == 'scheduled' %}bg-primary{% else %}bg-warning text-dark{% endif %} text-white small">{{ s.get_status_display }}</span>
+                            </div>
+                            <div class="text-end">
+                                <div class="small fw-medium">{{ s.schedule_date|date:"M d, Y"|default:"Not Set" }}</div>
+                                <div class="small text-muted">{{ s.get_time_slot_display|default:"" }}</div>
+                            </div>
+                        </div>
+                        <div class="small text-muted mt-1">{{ s.claim_location }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small">No appointments recorded.</p>
+            {% endif %}
+        </div>
+
+        <!-- Right: Requests -->
+        <div class="col-lg-4">
+            <h5 class="section-title mb-3"><i class="fi fi-rr-clipboard-list text-warning"></i> Assistance Requests</h5>
+            {% for req in requests %}
+            <div class="card mb-3 p-3" id="req-card-{{ req.pk }}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="small fw-semibold">{{ req.program.name|truncatewords:5 }}</div>
+                        <div class="small text-muted">{{ req.date_submitted|date:"M d, Y" }}</div>
+                    </div>
+                    <span class="badge {% if req.status == 'approved' %}bg-success{% elif req.status == 'rejected' %}bg-danger{% else %}bg-warning text-dark{% endif %} text-white">{{ req.get_status_display }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted small">No requests found.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

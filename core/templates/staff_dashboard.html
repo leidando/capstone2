@@ -45,6 +45,68 @@
         </div>
     </div>
 
+    <!-- Today's Appointments (Staff) -->
+    <div class="row g-4 mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-calendar-clock text-primary"></i> Today's Appointments
+                        <span class="badge bg-primary rounded-pill ms-1">{{ today_schedules_count }}</span>
+                        {% if reschedule_requests_count > 0 %}
+                        <span class="badge bg-warning text-dark rounded-pill ms-1">{{ reschedule_requests_count }} Reschedule</span>
+                        {% endif %}
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'schedule_list' %}" class="btn btn-sm btn-primary" id="staff-view-schedules">
+                            <i class="fi fi-rr-calendar me-1"></i> All Schedules
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Beneficiary</th>
+                                    <th>Program</th>
+                                    <th>Time Slot</th>
+                                    <th>Location</th>
+                                    <th class="text-end pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in today_schedules %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold" style="color:var(--text)">{{ s.beneficiary.full_name }}</div>
+                                        <div class="small text-muted">{{ s.beneficiary.barangay.name|default:"" }}</div>
+                                    </td>
+                                    <td class="small text-muted">{{ s.program.name|truncatewords:4 }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ s.get_time_slot_display }}</span></td>
+                                    <td class="small text-muted">{{ s.claim_location|truncatewords:4 }}</td>
+                                    <td class="text-end pe-4">
+                                        <a href="{% url 'schedule_detail' s.pk %}" class="btn btn-sm btn-outline" id="staff-sched-{{ s.pk }}">
+                                            <i class="fi fi-rr-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <i class="fi fi-rr-calendar-check" style="font-size:2rem;color:var(--border)"></i>
+                                        <p class="small text-muted mt-2 mb-0">No appointments scheduled for today.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
     <!-- SECTION 2: ASSIGNED PROGRAMS -->
     <h3 class="section-title mb-4"><i class="fi fi-rr-folder-open text-slate-500"></i> My Assigned Programs</h3>
     <div class="card mb-5">

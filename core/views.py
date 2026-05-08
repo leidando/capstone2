@@ -11,16 +11,18 @@ from django.http import JsonResponse, HttpResponse, HttpResponseForbidden
 from django.db.models import Count, Q, Sum, Avg
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST
 
 from .models import (
     Barangay, Program, ProgramRequiredDocument, UserProfile,
     Beneficiary, AssistanceRequest, ApplicationDocument,
     StaffProfile, StaffActivityLog,
+    ScheduledTransaction, ServiceHistory, Notification,
 )
 from .forms import (
     RegistrationForm, LoginForm, BeneficiaryForm,
     AssistanceRequestForm, ProgramForm, BeneficiaryAdminForm,
-    StaffCreationForm,
+    StaffCreationForm, ScheduledTransactionForm, RescheduleRequestForm,
 )
 from .insights import generate_all_insights
 
@@ -195,18 +197,41 @@ def home_redirect(request):
 
 @login_required
 def user_dashboard(request):
-    my_requests = AssistanceRequest.objects.filter(user=request.user).select_related('program', 'barangay')
-    
+    my_requests = AssistanceRequest.objects.filter(
+        user=request.user
+    ).select_related('program', 'barangay', 'schedule')
+
     # Retrieve the user's beneficiary profile
-    beneficiary_profile = Beneficiary.objects.filter(user=request.user).select_related('barangay').first()
-    has_approved_profile = False
-    if beneficiary_profile and beneficiary_profile.status == 'approved':
-        has_approved_profile = True
+    beneficiary_profile = Beneficiary.objects.filter(
+        user=request.user
+    ).select_related('barangay').first()
+    has_approved_profile = beneficiary_profile and beneficiary_profile.status == 'approved'
+
+    # Upcoming appointment
+    upcoming_appointment = None
+    service_history_count = 0
+    recent_history = []
+    if beneficiary_profile:
+        today = timezone.localdate()
+        upcoming_appointment = ScheduledTransaction.objects.filter(
+            beneficiary=beneficiary_profile,
+            schedule_date__gte=today,
+            status__in=['scheduled', 'approved', 'pending'],
+        ).select_related('program', 'barangay').order_by('schedule_date').first()
+
+        history_qs = ServiceHistory.objects.filter(
+            beneficiary=beneficiary_profile
+        ).select_related('program').order_by('-created_at')
+        service_history_count = history_qs.count()
+        recent_history = list(history_qs[:3])
 
     return render(request, 'user_dashboard.html', {
         'requests': my_requests,
         'beneficiary_profile': beneficiary_profile,
         'has_approved_profile': has_approved_profile,
+        'upcoming_appointment': upcoming_appointment,
+        'service_history_count': service_history_count,
+        'recent_history': recent_history,
     })
 
 
@@ -336,6 +361,18 @@ def staff_dashboard(request):
     ben_paginator = Paginator(bens_qs.order_by('-vulnerability_score'), 10)
     ben_page = ben_paginator.get_page(request.GET.get('ben_page'))
 
+    # Today's schedules for assigned programs
+    today = timezone.localdate()
+    today_schedules = ScheduledTransaction.objects.filter(
+        program_id__in=program_ids,
+        schedule_date=today,
+    ).select_related('beneficiary', 'program').order_by('time_slot')
+
+    reschedule_requests = ScheduledTransaction.objects.filter(
+        program_id__in=program_ids,
+        reschedule_requested=True,
+    ).select_related('beneficiary', 'program').order_by('-updated_at')
+
     return render(request, 'staff_dashboard.html', {
         'assigned_programs': assigned_programs,
         'pending_requests': pending_page,
@@ -346,6 +383,9 @@ def staff_dashboard(request):
         'beneficiaries': ben_page,
         'req_search': req_search,
         'ben_search': ben_search,
+        'today_schedules': today_schedules[:5],
+        'today_schedules_count': today_schedules.count(),
+        'reschedule_requests_count': reschedule_requests.count(),
     })
 
 
@@ -531,6 +571,19 @@ def admin_dashboard(request):
     for p in program_effectiveness:
         p.effectiveness = round((p.approved_reqs / max(p.total_reqs, 1)) * 100, 1)
 
+    # Scheduled Transaction Stats
+    today = timezone.localdate()
+    today_schedules = ScheduledTransaction.objects.filter(
+        schedule_date=today
+    ).select_related('beneficiary', 'program')
+    
+    reschedule_requests = ScheduledTransaction.objects.filter(
+        reschedule_requested=True
+    ).select_related('beneficiary', 'program').order_by('-updated_at')
+
+    total_schedules = ScheduledTransaction.objects.count()
+    completed_schedules = ScheduledTransaction.objects.filter(status='completed').count()
+
     # Generate system insights
     insights = generate_all_insights()
 
@@ -549,6 +602,12 @@ def admin_dashboard(request):
         'vulnerable_barangays': vulnerable_barangays,
         'service_gap_areas': service_gap_areas,
         'program_effectiveness': program_effectiveness,
+        'today_schedules': today_schedules[:5],
+        'today_schedules_count': today_schedules.count(),
+        'reschedule_requests': reschedule_requests[:5],
+        'reschedule_requests_count': reschedule_requests.count(),
+        'total_schedules': total_schedules,
+        'completed_schedules': completed_schedules,
         'insights': insights,
     })
 
@@ -1209,3 +1268,719 @@ def api_gap_data(request):
     from .insights import detect_population_gaps
     gaps = detect_population_gaps()
     return JsonResponse(gaps, safe=False)
+
+
+# ══════════════════════════════════════════════════════════════
+#  NOTIFICATION UTILITIES
+# ══════════════════════════════════════════════════════════════
+
+def create_notification(recipient, notification_type, title, message, related_url=''):
+    """Helper — create an in-app notification for a user."""
+    Notification.objects.create(
+        recipient=recipient,
+        notification_type=notification_type,
+        title=title,
+        message=message,
+        related_url=related_url,
+    )
+
+
+def notify_admins(notification_type, title, message, related_url=''):
+    """Send a notification to all active admin users."""
+    admins = User.objects.filter(
+        Q(is_superuser=True) | Q(profile__role='admin')
+    ).distinct()
+    for admin in admins:
+        create_notification(admin, notification_type, title, message, related_url)
+
+
+def notify_staff_for_program(program, notification_type, title, message, related_url=''):
+    """Notify all staff assigned to a given program."""
+    staff_users = User.objects.filter(
+        staff_profile__assigned_programs=program,
+        staff_profile__is_active=True,
+        profile__role='staff',
+    ).distinct()
+    for staff in staff_users:
+        create_notification(staff, notification_type, title, message, related_url)
+
+
+# ── Notification API ──────────────────────────────────────────
+
+@login_required
+def api_notifications(request):
+    """JSON: return latest 10 notifications for the current user."""
+    notifs = Notification.objects.filter(recipient=request.user).order_by('-created_at')[:15]
+    unread_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+    data = {
+        'unread_count': unread_count,
+        'notifications': [
+            {
+                'id': n.pk,
+                'type': n.notification_type,
+                'title': n.title,
+                'message': n.message,
+                'url': n.related_url,
+                'is_read': n.is_read,
+                'created_at': n.created_at.strftime('%b %d, %Y %I:%M %p'),
+            }
+            for n in notifs
+        ],
+    }
+    return JsonResponse(data)
+
+
+@login_required
+@require_POST
+def mark_notification_read(request, pk=None):
+    """Mark one or all notifications as read."""
+    if pk:
+        Notification.objects.filter(pk=pk, recipient=request.user).update(is_read=True)
+    else:
+        Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    return JsonResponse({'status': 'ok'})
+
+
+# ══════════════════════════════════════════════════════════════
+#  SCHEDULED TRANSACTIONS — ADMIN / STAFF VIEWS
+# ══════════════════════════════════════════════════════════════
+
+@staff_or_admin_required
+def schedule_list(request):
+    """Paginated schedule list with search, filter, and sort."""
+    is_admin = request.user.is_superuser or (
+        hasattr(request.user, 'profile') and request.user.profile.is_admin
+    )
+
+    if is_admin:
+        qs = ScheduledTransaction.objects.select_related(
+            'beneficiary', 'program', 'barangay', 'assigned_staff', 'assistance_request'
+        ).all()
+    else:
+        # Staff sees only schedules for their assigned programs
+        program_ids = request.user.staff_profile.assigned_programs.values_list('id', flat=True)
+        qs = ScheduledTransaction.objects.filter(program_id__in=program_ids).select_related(
+            'beneficiary', 'program', 'barangay', 'assigned_staff', 'assistance_request'
+        )
+
+    # Search
+    search = request.GET.get('search', '')
+    if search:
+        qs = qs.filter(
+            Q(beneficiary__full_name__icontains=search) |
+            Q(program__name__icontains=search) |
+            Q(barangay__name__icontains=search) |
+            Q(claim_location__icontains=search)
+        )
+
+    # Filters
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+
+    program_filter = request.GET.get('program', '')
+    if program_filter:
+        qs = qs.filter(program__id=program_filter)
+
+    date_filter = request.GET.get('date', '')
+    if date_filter:
+        qs = qs.filter(schedule_date=date_filter)
+
+    # Sorting
+    sort = request.GET.get('sort', '-created_at')
+    valid_sorts = {
+        'date_asc': 'schedule_date',
+        'date_desc': '-schedule_date',
+        'name_asc': 'beneficiary__full_name',
+        'name_desc': '-beneficiary__full_name',
+        'status_asc': 'status',
+        'newest': '-created_at',
+    }
+    qs = qs.order_by(valid_sorts.get(sort, '-created_at'))
+
+    # Summary stats
+    today = timezone.localdate()
+    total_count = qs.count()
+    today_count = qs.filter(schedule_date=today).count()
+    pending_count = qs.filter(status__in=['pending', 'under_review']).count()
+    missed_count = qs.filter(status='missed').count()
+    completed_count = qs.filter(status='completed').count()
+
+    paginator = Paginator(qs, 15)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    programs = Program.objects.filter(is_active=True).order_by('name')
+    try:
+        selected_program_id = int(program_filter) if program_filter else None
+    except (ValueError, TypeError):
+        selected_program_id = None
+
+    return render(request, 'schedules/schedule_list.html', {
+        'page_obj': page_obj,
+        'programs': programs,
+        'search': search,
+        'status_filter': status_filter,
+        'program_filter': selected_program_id,
+        'date_filter': date_filter,
+        'sort': sort,
+        'total_count': total_count,
+        'today_count': today_count,
+        'pending_count': pending_count,
+        'missed_count': missed_count,
+        'completed_count': completed_count,
+        'is_admin': is_admin,
+        'STATUS_CHOICES': ScheduledTransaction.STATUS_CHOICES,
+    })
+
+
+@staff_or_admin_required
+def schedule_create(request, request_pk):
+    """Create a schedule for an approved assistance request."""
+    assistance_req = get_object_or_404(
+        AssistanceRequest.objects.select_related('user', 'program', 'barangay', 'beneficiary'),
+        pk=request_pk, status='approved',
+    )
+
+    # Check if schedule already exists
+    if hasattr(assistance_req, 'schedule') and assistance_req.schedule:
+        messages.warning(request, 'A schedule already exists for this request.')
+        return redirect('schedule_detail', pk=assistance_req.schedule.pk)
+
+    if not assistance_req.beneficiary:
+        messages.error(request, 'This request has no linked beneficiary profile.')
+        return redirect('request_detail', pk=request_pk)
+
+    if request.method == 'POST':
+        form = ScheduledTransactionForm(request.POST)
+        if form.is_valid():
+            sched = form.save(commit=False)
+            sched.assistance_request = assistance_req
+            sched.beneficiary = assistance_req.beneficiary
+            sched.program = assistance_req.program
+            sched.barangay = assistance_req.barangay
+            sched.created_by = request.user
+
+            # Conflict & capacity validation
+            if sched.schedule_date and sched.time_slot:
+                slot_count = ScheduledTransaction.get_slot_count(sched.schedule_date, sched.time_slot)
+                if slot_count >= sched.max_per_slot:
+                    messages.error(
+                        request,
+                        f'Time slot {sched.get_time_slot_display()} on '
+                        f'{sched.schedule_date} is fully booked ({slot_count}/{sched.max_per_slot}).'
+                    )
+                    return render(request, 'schedules/schedule_create.html', {
+                        'form': form, 'assistance_req': assistance_req,
+                    })
+
+            sched.save()
+
+            # Notify beneficiary
+            create_notification(
+                recipient=assistance_req.user,
+                notification_type='schedule_assigned',
+                title='Appointment Scheduled',
+                message=(
+                    f'Your appointment for {sched.program.name} has been scheduled on '
+                    f'{sched.schedule_date.strftime("%B %d, %Y") if sched.schedule_date else "a date TBD"} '
+                    f'at {sched.claim_location}.'
+                ),
+                related_url=f'/user/appointments/{sched.pk}/',
+            )
+
+            messages.success(request, f'Schedule created for {sched.beneficiary.full_name}.')
+            return redirect('schedule_detail', pk=sched.pk)
+    else:
+        form = ScheduledTransactionForm(initial={'status': 'scheduled'})
+
+    return render(request, 'schedules/schedule_create.html', {
+        'form': form,
+        'assistance_req': assistance_req,
+    })
+
+
+@staff_or_admin_required
+def schedule_detail(request, pk):
+    """Full detail view of a single scheduled transaction."""
+    is_admin = request.user.is_superuser or (
+        hasattr(request.user, 'profile') and request.user.profile.is_admin
+    )
+    if is_admin:
+        sched = get_object_or_404(
+            ScheduledTransaction.objects.select_related(
+                'beneficiary', 'program', 'barangay', 'assigned_staff',
+                'assistance_request', 'created_by',
+            ),
+            pk=pk,
+        )
+    else:
+        program_ids = request.user.staff_profile.assigned_programs.values_list('id', flat=True)
+        sched = get_object_or_404(
+            ScheduledTransaction.objects.select_related(
+                'beneficiary', 'program', 'barangay', 'assigned_staff',
+                'assistance_request', 'created_by',
+            ),
+            pk=pk, program_id__in=program_ids,
+        )
+
+    # Service history record if completed
+    history_record = None
+    if hasattr(sched, 'history'):
+        history_record = sched.history
+
+    return render(request, 'schedules/schedule_detail.html', {
+        'sched': sched,
+        'history_record': history_record,
+        'is_admin': is_admin,
+    })
+
+
+@staff_or_admin_required
+def schedule_edit(request, pk):
+    """Edit/reschedule an existing appointment."""
+    is_admin = request.user.is_superuser or (
+        hasattr(request.user, 'profile') and request.user.profile.is_admin
+    )
+    if is_admin:
+        sched = get_object_or_404(ScheduledTransaction, pk=pk)
+    else:
+        program_ids = request.user.staff_profile.assigned_programs.values_list('id', flat=True)
+        sched = get_object_or_404(ScheduledTransaction, pk=pk, program_id__in=program_ids)
+
+    if sched.status in ['completed', 'rejected']:
+        messages.error(request, 'Cannot edit a completed or rejected schedule.')
+        return redirect('schedule_detail', pk=pk)
+
+    if request.method == 'POST':
+        old_date = sched.schedule_date
+        old_slot = sched.time_slot
+        form = ScheduledTransactionForm(request.POST, instance=sched)
+        if form.is_valid():
+            updated = form.save(commit=False)
+
+            # Conflict check (excluding self)
+            if updated.schedule_date and updated.time_slot:
+                slot_count = ScheduledTransaction.get_slot_count(
+                    updated.schedule_date, updated.time_slot, exclude_pk=pk
+                )
+                if slot_count >= updated.max_per_slot:
+                    messages.error(
+                        request,
+                        f'Time slot {updated.get_time_slot_display()} on '
+                        f'{updated.schedule_date} is fully booked ({slot_count}/{updated.max_per_slot}).'
+                    )
+                    return render(request, 'schedules/schedule_edit.html', {
+                        'form': form, 'sched': sched,
+                    })
+
+            # Track reschedule
+            if old_date and updated.schedule_date != old_date:
+                updated.reschedule_count += 1
+
+            updated.reschedule_requested = False
+            updated.save()
+
+            # Notify beneficiary of reschedule
+            if old_date and updated.schedule_date != old_date:
+                create_notification(
+                    recipient=sched.assistance_request.user if sched.assistance_request else None,
+                    notification_type='schedule_assigned',
+                    title='Appointment Rescheduled',
+                    message=(
+                        f'Your appointment for {sched.program.name} has been rescheduled to '
+                        f'{updated.schedule_date.strftime("%B %d, %Y") if updated.schedule_date else "TBD"}.'
+                    ),
+                    related_url=f'/user/appointments/{sched.pk}/',
+                )
+
+            messages.success(request, 'Schedule updated successfully.')
+            return redirect('schedule_detail', pk=pk)
+    else:
+        form = ScheduledTransactionForm(instance=sched)
+
+    return render(request, 'schedules/schedule_edit.html', {
+        'form': form,
+        'sched': sched,
+        'is_admin': is_admin,
+    })
+
+
+@staff_or_admin_required
+@require_POST
+def schedule_update_status(request, pk):
+    """Update the status of a scheduled transaction (claim, complete, cancel, miss, reject)."""
+    is_admin = request.user.is_superuser or (
+        hasattr(request.user, 'profile') and request.user.profile.is_admin
+    )
+    if is_admin:
+        sched = get_object_or_404(ScheduledTransaction, pk=pk)
+    else:
+        program_ids = request.user.staff_profile.assigned_programs.values_list('id', flat=True)
+        sched = get_object_or_404(ScheduledTransaction, pk=pk, program_id__in=program_ids)
+
+    new_status = request.POST.get('status', '')
+    remarks = request.POST.get('remarks', '')
+    amount_value = request.POST.get('amount_value', '0') or '0'
+
+    allowed = ['pending', 'under_review', 'approved', 'scheduled', 'claimed',
+               'completed', 'missed', 'cancelled', 'rejected']
+    if new_status not in allowed:
+        messages.error(request, 'Invalid status.')
+        return redirect('schedule_detail', pk=pk)
+
+    old_status = sched.status
+    sched.status = new_status
+    if remarks:
+        sched.admin_notes = remarks
+    sched.save()
+
+    # Auto-create ServiceHistory when marked completed
+    if new_status == 'completed' and old_status != 'completed':
+        try:
+            amount = float(amount_value)
+        except (ValueError, TypeError):
+            amount = 0.0
+
+        ServiceHistory.objects.get_or_create(
+            scheduled_transaction=sched,
+            defaults={
+                'beneficiary': sched.beneficiary,
+                'program': sched.program,
+                'assistance_request': sched.assistance_request,
+                'amount_value': amount,
+                'claim_date': sched.schedule_date or timezone.localdate(),
+                'assigned_staff': sched.assigned_staff,
+                'transaction_status': 'completed',
+                'remarks': sched.admin_notes,
+            }
+        )
+        # Update beneficiary last_assistance_date
+        sched.beneficiary.last_assistance_date = timezone.now()
+        sched.beneficiary.save()
+
+        # Notify beneficiary
+        if sched.assistance_request:
+            create_notification(
+                recipient=sched.assistance_request.user,
+                notification_type='claim_completed',
+                title='Assistance Claim Completed',
+                message=f'Your claim for {sched.program.name} has been successfully completed.',
+                related_url='/user/service-history/',
+            )
+
+    # Notify for missed
+    if new_status == 'missed' and old_status != 'missed':
+        if sched.assistance_request:
+            create_notification(
+                recipient=sched.assistance_request.user,
+                notification_type='schedule_missed',
+                title='Missed Appointment',
+                message=(
+                    f'You missed your appointment for {sched.program.name} on '
+                    f'{sched.schedule_date}. Please contact the CSWDO office to reschedule.'
+                ),
+                related_url=f'/user/appointments/{sched.pk}/',
+            )
+        # Log activity
+        StaffActivityLog.objects.create(
+            staff=request.user, action='update',
+            target_type='ScheduledTransaction', target_id=pk,
+            description=f'Marked schedule #{pk} as missed for {sched.beneficiary.full_name}',
+        )
+
+    messages.success(request, f'Schedule status updated to "{sched.get_status_display()}".')
+
+    redirect_to = request.POST.get('redirect', 'schedule_list')
+    if redirect_to == 'schedule_detail':
+        return redirect('schedule_detail', pk=pk)
+    return redirect('schedule_list')
+
+
+@admin_required
+@require_POST
+def schedule_bulk_action(request):
+    """Bulk update multiple schedule statuses."""
+    ids = request.POST.getlist('selected_ids')
+    action = request.POST.get('bulk_action', '')
+    allowed_actions = {
+        'mark_missed': 'missed',
+        'mark_cancelled': 'cancelled',
+        'mark_completed': 'completed',
+    }
+    if action not in allowed_actions or not ids:
+        messages.error(request, 'Invalid bulk action or no schedules selected.')
+        return redirect('schedule_list')
+
+    new_status = allowed_actions[action]
+    updated = ScheduledTransaction.objects.filter(pk__in=ids).update(status=new_status)
+    messages.success(request, f'{updated} schedule(s) updated to "{new_status}".')
+    return redirect('schedule_list')
+
+
+@staff_or_admin_required
+def api_schedule_slots(request):
+    """JSON API: return slot availability for a given date."""
+    date_str = request.GET.get('date', '')
+    max_per_slot = int(request.GET.get('max_per_slot', 10))
+    if not date_str:
+        return JsonResponse({'error': 'date required'}, status=400)
+
+    from datetime import date as date_type
+    try:
+        from datetime import datetime
+        query_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'error': 'invalid date format'}, status=400)
+
+    slots = []
+    for code, label in ScheduledTransaction.TIME_SLOT_CHOICES:
+        count = ScheduledTransaction.get_slot_count(query_date, code)
+        slots.append({
+            'value': code,
+            'label': label,
+            'count': count,
+            'max': max_per_slot,
+            'available': count < max_per_slot,
+        })
+    return JsonResponse({'date': date_str, 'slots': slots})
+
+
+# ══════════════════════════════════════════════════════════════
+#  SERVICE HISTORY — ADMIN VIEWS
+# ══════════════════════════════════════════════════════════════
+
+@admin_required
+def admin_service_history(request):
+    """Admin view: complete service history list with search, filter, export."""
+    qs = ServiceHistory.objects.select_related(
+        'beneficiary', 'program', 'assigned_staff', 'assistance_request',
+    ).all()
+
+    search = request.GET.get('search', '')
+    if search:
+        qs = qs.filter(
+            Q(beneficiary__full_name__icontains=search) |
+            Q(program__name__icontains=search)
+        )
+
+    program_filter = request.GET.get('program', '')
+    if program_filter:
+        qs = qs.filter(program__id=program_filter)
+
+    barangay_filter = request.GET.get('barangay', '')
+    if barangay_filter:
+        qs = qs.filter(beneficiary__barangay__id=barangay_filter)
+
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    if date_from:
+        qs = qs.filter(claim_date__gte=date_from)
+    if date_to:
+        qs = qs.filter(claim_date__lte=date_to)
+
+    # CSV export
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="service_history.csv"'
+        writer = csv.writer(response)
+        writer.writerow([
+            'Beneficiary', 'Program', 'Barangay', 'Claim Date',
+            'Amount (PHP)', 'Staff', 'Status', 'Remarks',
+        ])
+        for h in qs:
+            writer.writerow([
+                h.beneficiary.full_name,
+                h.program.name,
+                h.beneficiary.barangay.name if h.beneficiary.barangay else '',
+                h.claim_date or '',
+                h.amount_value,
+                h.assigned_staff.get_full_name() if h.assigned_staff else '',
+                h.transaction_status,
+                h.remarks,
+            ])
+        return response
+
+    total_count = qs.count()
+    paginator = Paginator(qs, 15)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    try:
+        selected_program_id = int(program_filter) if program_filter else None
+    except (ValueError, TypeError):
+        selected_program_id = None
+
+    try:
+        selected_barangay_id = int(barangay_filter) if barangay_filter else None
+    except (ValueError, TypeError):
+        selected_barangay_id = None
+
+    return render(request, 'history/service_history_list.html', {
+        'page_obj': page_obj,
+        'programs': Program.objects.filter(is_active=True).order_by('name'),
+        'barangays': Barangay.objects.all().order_by('name'),
+        'search': search,
+        'program_filter': selected_program_id,
+        'barangay_filter': selected_barangay_id,
+        'date_from': date_from,
+        'date_to': date_to,
+        'total_count': total_count,
+    })
+
+
+@admin_required
+def beneficiary_service_history(request, pk):
+    """Admin: complete history timeline for one beneficiary."""
+    beneficiary = get_object_or_404(Beneficiary.objects.select_related('barangay'), pk=pk)
+    history = ServiceHistory.objects.filter(beneficiary=beneficiary).select_related(
+        'program', 'assigned_staff', 'scheduled_transaction',
+    ).order_by('-created_at')
+    schedules = ScheduledTransaction.objects.filter(beneficiary=beneficiary).select_related(
+        'program', 'assigned_staff',
+    ).order_by('-created_at')
+    requests_qs = AssistanceRequest.objects.filter(beneficiary=beneficiary).select_related(
+        'program',
+    ).order_by('-date_submitted')
+
+    total_received = history.count()
+    total_requests_count = requests_qs.count()
+    total_amount = history.aggregate(total=Sum('amount_value'))['total'] or 0
+
+    return render(request, 'history/beneficiary_history.html', {
+        'beneficiary': beneficiary,
+        'history': history,
+        'schedules': schedules,
+        'requests': requests_qs,
+        'total_received': total_received,
+        'total_requests_count': total_requests_count,
+        'total_amount': total_amount,
+    })
+
+
+# ══════════════════════════════════════════════════════════════
+#  BENEFICIARY / USER SIDE — APPOINTMENTS & HISTORY
+# ══════════════════════════════════════════════════════════════
+
+@login_required
+def user_appointments(request):
+    """Beneficiary: view all own appointments."""
+    beneficiary = Beneficiary.objects.filter(user=request.user).first()
+    if not beneficiary:
+        messages.info(request, 'Please submit your beneficiary profile first.')
+        return redirect('submit_beneficiary')
+
+    schedules = ScheduledTransaction.objects.filter(
+        beneficiary=beneficiary
+    ).select_related('program', 'barangay', 'assigned_staff').order_by('-created_at')
+
+    # Upcoming
+    today = timezone.localdate()
+    upcoming = schedules.filter(
+        schedule_date__gte=today,
+        status__in=['scheduled', 'approved', 'pending'],
+    ).order_by('schedule_date').first()
+
+    return render(request, 'user/appointments.html', {
+        'schedules': schedules,
+        'upcoming': upcoming,
+        'beneficiary': beneficiary,
+        'today': today,
+    })
+
+
+@login_required
+def user_appointment_detail(request, pk):
+    """Beneficiary: detail view of a single appointment."""
+    beneficiary = get_object_or_404(Beneficiary, user=request.user)
+    sched = get_object_or_404(
+        ScheduledTransaction.objects.select_related(
+            'program', 'barangay', 'assigned_staff', 'assistance_request',
+        ),
+        pk=pk, beneficiary=beneficiary,
+    )
+    return render(request, 'user/appointment_detail.html', {
+        'sched': sched,
+        'beneficiary': beneficiary,
+    })
+
+
+@login_required
+def user_request_reschedule(request, pk):
+    """Beneficiary requests a reschedule for their appointment."""
+    beneficiary = get_object_or_404(Beneficiary, user=request.user)
+    sched = get_object_or_404(
+        ScheduledTransaction,
+        pk=pk, beneficiary=beneficiary,
+        status__in=['scheduled', 'approved', 'missed'],
+    )
+
+    if request.method == 'POST':
+        form = RescheduleRequestForm(request.POST)
+        if form.is_valid():
+            sched.reschedule_requested = True
+            sched.reschedule_reason = form.cleaned_data['reason']
+            sched.save()
+
+            # Notify admins and staff
+            msg = (
+                f'{beneficiary.full_name} has requested a reschedule for their '
+                f'{sched.program.name} appointment'
+                f'{" (preferred: " + str(form.cleaned_data["preferred_date"]) + ")" if form.cleaned_data.get("preferred_date") else ""}. '
+                f'Reason: {form.cleaned_data["reason"][:100]}'
+            )
+            notify_admins('reschedule_request', 'Reschedule Requested', msg,
+                          related_url=f'/schedules/{sched.pk}/')
+            notify_staff_for_program(sched.program, 'reschedule_request',
+                                     'Reschedule Requested', msg,
+                                     related_url=f'/schedules/{sched.pk}/')
+
+            messages.success(request, 'Reschedule request submitted. We will contact you soon.')
+            return redirect('user_appointment_detail', pk=pk)
+    else:
+        form = RescheduleRequestForm()
+
+    return render(request, 'user/request_reschedule.html', {
+        'form': form,
+        'sched': sched,
+        'beneficiary': beneficiary,
+    })
+
+
+@login_required
+def user_service_history(request):
+    """Beneficiary: personal service history timeline."""
+    beneficiary = Beneficiary.objects.filter(user=request.user).first()
+    if not beneficiary:
+        messages.info(request, 'Please submit your beneficiary profile first.')
+        return redirect('submit_beneficiary')
+
+    history = ServiceHistory.objects.filter(beneficiary=beneficiary).select_related(
+        'program', 'assigned_staff', 'scheduled_transaction',
+    ).order_by('-created_at')
+
+    total_received = history.count()
+    total_amount = history.aggregate(total=Sum('amount_value'))['total'] or 0
+    programs_helped = history.values('program').distinct().count()
+
+    return render(request, 'user/service_history.html', {
+        'history': history,
+        'beneficiary': beneficiary,
+        'total_received': total_received,
+        'total_amount': total_amount,
+        'programs_helped': programs_helped,
+    })
+
+
+@login_required
+def print_appointment_slip(request, pk):
+    """Printable appointment slip for beneficiary."""
+    beneficiary = get_object_or_404(Beneficiary, user=request.user)
+    sched = get_object_or_404(
+        ScheduledTransaction.objects.select_related(
+            'program', 'barangay', 'assigned_staff', 'beneficiary',
+        ),
+        pk=pk, beneficiary=beneficiary,
+    )
+    return render(request, 'schedules/appointment_slip.html', {
+        'sched': sched,
+        'beneficiary': beneficiary,
+    })

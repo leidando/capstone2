@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Scheduled Transactions — CSWDO{% endblock %}
+{% block page_title %}Scheduled Transactions{% endblock %}
+{% block breadcrumb %}Management / Schedules{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="metric-card mc-blue">
+                <div class="metric-icon"><i class="fi fi-rr-calendar"></i></div>
+                <div class="metric-label">Total Schedules</div>
+                <div class="metric-value">{{ total_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="metric-card mc-cyan">
+                <div class="metric-icon"><i class="fi fi-rr-clock"></i></div>
+                <div class="metric-label">Today's Appointments</div>
+                <div class="metric-value">{{ today_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="metric-card mc-yellow">
+                <div class="metric-icon"><i class="fi fi-rr-hourglass"></i></div>
+                <div class="metric-label">Pending</div>
+                <div class="metric-value">{{ pending_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="metric-card mc-green">
+                <div class="metric-icon"><i class="fi fi-rr-check-circle"></i></div>
+                <div class="metric-label">Completed</div>
+                <div class="metric-value">{{ completed_count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="card mb-4">
+        <div class="card-body p-3">
+            <form method="GET" class="row g-2 align-items-end" id="filter-form">
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-semibold">Search</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"><i class="fi fi-rr-search"></i></span>
+                        <input type="text" name="search" class="form-control" value="{{ search }}"
+                            placeholder="Beneficiary, program, location..." id="search-input">
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold">Status</label>
+                    <select name="status" class="form-select form-select-sm" id="filter-status">
+                        <option value="">All Statuses</option>
+                        {% for val, label in STATUS_CHOICES %}
+                        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold">Program</label>
+                    <select name="program" class="form-select form-select-sm" id="filter-program">
+                        <option value="">All Programs</option>
+                        {% for p in programs %}
+                        <option value="{{ p.pk }}" {% if program_filter == p.pk %}selected{% endif %}>{{ p.name|truncatewords:4 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold">Date</label>
+                    <input type="date" name="date" class="form-control form-control-sm" value="{{ date_filter }}" id="filter-date">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold">Sort</label>
+                    <select name="sort" class="form-select form-select-sm" id="filter-sort">
+                        <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest First</option>
+                        <option value="date_asc" {% if sort == 'date_asc' %}selected{% endif %}>Date ↑</option>
+                        <option value="date_desc" {% if sort == 'date_desc' %}selected{% endif %}>Date ↓</option>
+                        <option value="name_asc" {% if sort == 'name_asc' %}selected{% endif %}>Name A–Z</option>
+                        <option value="status_asc" {% if sort == 'status_asc' %}selected{% endif %}>Status</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-1 d-flex gap-1">
+                    <button type="submit" class="btn btn-primary btn-sm w-100" id="filter-submit">Filter</button>
+                    <a href="{% url 'schedule_list' %}" class="btn btn-outline btn-sm" id="filter-clear" title="Clear">✕</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Actions + Table -->
+    <div class="card">
+        <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                <i class="fi fi-rr-calendar-lines text-primary"></i> All Appointments
+                <span class="badge bg-primary rounded-pill ms-1">{{ total_count }}</span>
+            </h5>
+            {% if is_admin %}
+            <form method="POST" action="{% url 'schedule_bulk_action' %}" id="bulk-form" class="d-flex gap-2 align-items-center">
+                {% csrf_token %}
+                <input type="hidden" name="selected_ids" id="bulk-ids-input" value="">
+                <select name="bulk_action" class="form-select form-select-sm" style="width:auto" id="bulk-action-select">
+                    <option value="">Bulk Action…</option>
+                    <option value="mark_missed">Mark as Missed</option>
+                    <option value="mark_cancelled">Mark as Cancelled</option>
+                    <option value="mark_completed">Mark as Completed</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline" id="bulk-submit"
+                    onclick="collectBulkIds()">Apply</button>
+            </form>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                {% if page_obj %}
+                <table class="table mb-0" id="schedules-table">
+                    <thead>
+                        <tr>
+                            {% if is_admin %}<th class="ps-4" style="width:40px"><input type="checkbox" id="select-all" class="form-check-input"></th>{% endif %}
+                            <th class="{% if not is_admin %}ps-4{% endif %}">Beneficiary</th>
+                            <th>Program</th>
+                            <th>Date / Time</th>
+                            <th>Location</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sched in page_obj %}
+                        <tr class="sched-row {% if sched.reschedule_requested %}table-warning-subtle{% endif %}">
+                            {% if is_admin %}
+                            <td class="ps-4"><input type="checkbox" class="form-check-input row-select" value="{{ sched.pk }}" id="chk-{{ sched.pk }}"></td>
+                            {% endif %}
+                            <td class="{% if not is_admin %}ps-4{% endif %}">
+                                <div class="fw-semibold" style="color:var(--text)">{{ sched.beneficiary.full_name }}</div>
+                                <div class="small text-muted">{{ sched.beneficiary.barangay.name|default:"" }}</div>
+                                {% if sched.reschedule_requested %}
+                                <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem">Reschedule Requested</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="small fw-medium" style="color:var(--text-secondary)">{{ sched.program.name|truncatewords:5 }}</span>
+                            </td>
+                            <td>
+                                {% if sched.schedule_date %}
+                                <div class="fw-semibold" style="color:var(--text)">{{ sched.schedule_date|date:"M d, Y" }}</div>
+                                <div class="small text-muted">{{ sched.get_time_slot_display|default:"—" }}</div>
+                                {% else %}
+                                <span class="text-muted small">Not Scheduled</span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ sched.claim_location|truncatewords:4 }}</td>
+                            <td class="text-center">
+                                {% if sched.status == 'completed' %}
+                                <span class="badge bg-success text-white">Completed</span>
+                                {% elif sched.status == 'claimed' %}
+                                <span class="badge bg-info text-white">Claimed</span>
+                                {% elif sched.status == 'scheduled' %}
+                                <span class="badge bg-primary text-white">Scheduled</span>
+                                {% elif sched.status == 'missed' %}
+                                <span class="badge bg-danger text-white">Missed</span>
+                                {% elif sched.status == 'cancelled' %}
+                                <span class="badge bg-secondary text-white">Cancelled</span>
+                                {% elif sched.status == 'rejected' %}
+                                <span class="badge bg-danger text-white">Rejected</span>
+                                {% elif sched.status == 'approved' %}
+                                <span class="badge bg-success text-white">Approved</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">{{ sched.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <a href="{% url 'schedule_detail' sched.pk %}" class="btn btn-sm btn-outline" id="view-sched-{{ sched.pk }}" title="View">
+                                        <i class="fi fi-rr-eye"></i>
+                                    </a>
+                                    {% if sched.status not in 'completed,rejected' %}
+                                    <a href="{% url 'schedule_edit' sched.pk %}" class="btn btn-sm btn-outline" id="edit-sched-{{ sched.pk }}" title="Edit">
+                                        <i class="fi fi-rr-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-5">
+                    <div style="font-size:3rem;color:#e2e8f0;margin-bottom:1rem"><i class="fi fi-rr-calendar-lines"></i></div>
+                    <h5 class="fw-bold mb-2">No schedules found</h5>
+                    <p class="text-muted">Try adjusting your search or filters.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-transparent border-0 px-4 py-3 d-flex justify-content-between align-items-center">
+            <small class="text-muted">Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ total_count }}</small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search }}&status={{ status_filter }}&program={{ program_filter }}&date={{ date_filter }}&sort={{ sort }}" id="page-prev">‹ Prev</a>
+                    </li>
+                    {% endif %}
+                    <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search }}&status={{ status_filter }}&program={{ program_filter }}&date={{ date_filter }}&sort={{ sort }}" id="page-next">Next ›</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function collectBulkIds() {
+    const ids = Array.from(document.querySelectorAll('.row-select:checked')).map(c => c.value);
+    document.getElementById('bulk-ids-input').value = ids.join(',');
+    if (!ids.length) { alert('Please select at least one schedule.'); event.preventDefault(); }
+}
+const selectAll = document.getElementById('select-all');
+if (selectAll) {
+    selectAll.addEventListener('change', function () {
+        document.querySelectorAll('.row-select').forEach(c => c.checked = this.checked);
+    });
+}
+</script>
+{% endblock %}

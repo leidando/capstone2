@@ -204,3 +204,201 @@ class ApplicationDocument(models.Model):
 
     def __str__(self):
         return f"{self.required_document.document_name} — {self.get_status_display()}"
+
+
+# ══════════════════════════════════════════════════════════════
+#  SCHEDULED TRANSACTIONS / APPOINTMENT SYSTEM
+# ══════════════════════════════════════════════════════════════
+
+class ScheduledTransaction(models.Model):
+    """Tracks the full claiming lifecycle for an approved assistance request."""
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('under_review', 'Under Review'),
+        ('approved', 'Approved'),
+        ('scheduled', 'Scheduled'),
+        ('claimed', 'Claimed'),
+        ('completed', 'Completed'),
+        ('missed', 'Missed'),
+        ('cancelled', 'Cancelled'),
+        ('rejected', 'Rejected'),
+    ]
+
+    TIME_SLOT_CHOICES = [
+        ('08:00', '8:00 AM – 9:00 AM'),
+        ('09:00', '9:00 AM – 10:00 AM'),
+        ('10:00', '10:00 AM – 11:00 AM'),
+        ('11:00', '11:00 AM – 12:00 PM'),
+        ('13:00', '1:00 PM – 2:00 PM'),
+        ('14:00', '2:00 PM – 3:00 PM'),
+        ('15:00', '3:00 PM – 4:00 PM'),
+        ('16:00', '4:00 PM – 5:00 PM'),
+    ]
+
+    assistance_request = models.OneToOneField(
+        AssistanceRequest, on_delete=models.CASCADE,
+        related_name='schedule', null=True, blank=True,
+    )
+    beneficiary = models.ForeignKey(
+        Beneficiary, on_delete=models.CASCADE, related_name='schedules',
+    )
+    program = models.ForeignKey(
+        Program, on_delete=models.CASCADE, related_name='schedules',
+    )
+    barangay = models.ForeignKey(
+        Barangay, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='schedules',
+    )
+
+    # Appointment details
+    schedule_date = models.DateField(null=True, blank=True)
+    time_slot = models.CharField(
+        max_length=5, choices=TIME_SLOT_CHOICES, blank=True,
+        help_text='Hour block (HH:MM)',
+    )
+    claim_location = models.CharField(max_length=300, default='CSWDO Office, Tayabas City')
+    assigned_staff = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='assigned_schedules',
+    )
+
+    # Capacity control
+    max_per_slot = models.PositiveIntegerField(default=10, help_text='Max beneficiaries per slot')
+
+    # Status & notes
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    remarks = models.TextField(blank=True)
+    admin_notes = models.TextField(blank=True)
+
+    # Reschedule tracking
+    reschedule_count = models.PositiveIntegerField(default=0)
+    reschedule_requested = models.BooleanField(default=False)
+    reschedule_reason = models.TextField(blank=True)
+
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_schedules',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Scheduled Transaction'
+        verbose_name_plural = 'Scheduled Transactions'
+
+    def __str__(self):
+        date_str = self.schedule_date.strftime('%b %d, %Y') if self.schedule_date else 'Unscheduled'
+        return f"{self.beneficiary.full_name} — {self.program.name} ({date_str})"
+
+    @property
+    def is_upcoming(self):
+        if self.schedule_date:
+            return self.schedule_date >= timezone.localdate() and self.status in ['scheduled', 'approved']
+        return False
+
+    @property
+    def is_overdue(self):
+        if self.schedule_date:
+            return self.schedule_date < timezone.localdate() and self.status in ['scheduled', 'approved']
+        return False
+
+    @classmethod
+    def get_slot_count(cls, date, time_slot, exclude_pk=None):
+        """Returns current booking count for a date+time slot (for conflict/capacity checks)."""
+        qs = cls.objects.filter(
+            schedule_date=date,
+            time_slot=time_slot,
+            status__in=['scheduled', 'approved', 'pending'],
+        )
+        if exclude_pk:
+            qs = qs.exclude(pk=exclude_pk)
+        return qs.count()
+
+
+# ══════════════════════════════════════════════════════════════
+#  SERVICE HISTORY
+# ══════════════════════════════════════════════════════════════
+
+class ServiceHistory(models.Model):
+    """Immutable record of every assistance received by a beneficiary."""
+
+    beneficiary = models.ForeignKey(
+        Beneficiary, on_delete=models.CASCADE, related_name='service_history',
+    )
+    program = models.ForeignKey(
+        Program, on_delete=models.CASCADE, related_name='service_history',
+    )
+    assistance_request = models.ForeignKey(
+        AssistanceRequest, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='history',
+    )
+    scheduled_transaction = models.OneToOneField(
+        ScheduledTransaction, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='history',
+    )
+
+    # Details captured at completion time (snapshot)
+    amount_value = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0,
+        help_text='Monetary value of assistance received (if applicable)',
+    )
+    claim_date = models.DateField(null=True, blank=True)
+    assigned_staff = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='service_records',
+    )
+    transaction_status = models.CharField(max_length=20, default='completed')
+    remarks = models.TextField(blank=True)
+    document_attachment = models.FileField(
+        upload_to='service_history_docs/', blank=True, null=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Service History'
+        verbose_name_plural = 'Service Histories'
+
+    def __str__(self):
+        date_str = self.claim_date.strftime('%b %d, %Y') if self.claim_date else 'N/A'
+        return f"{self.beneficiary.full_name} — {self.program.name} ({date_str})"
+
+
+# ══════════════════════════════════════════════════════════════
+#  NOTIFICATION SYSTEM
+# ══════════════════════════════════════════════════════════════
+
+class Notification(models.Model):
+    """In-app notification for all user roles."""
+
+    TYPE_CHOICES = [
+        ('new_request', 'New Assistance Request'),
+        ('request_approved', 'Request Approved'),
+        ('request_rejected', 'Request Rejected'),
+        ('schedule_assigned', 'Schedule Assigned'),
+        ('schedule_reminder', 'Schedule Reminder'),
+        ('schedule_missed', 'Missed Appointment'),
+        ('claim_completed', 'Claim Completed'),
+        ('reschedule_request', 'Reschedule Requested'),
+        ('pending_approval', 'Pending Approval'),
+        ('general', 'General'),
+    ]
+
+    recipient = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='notifications',
+    )
+    notification_type = models.CharField(max_length=30, choices=TYPE_CHOICES, default='general')
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    related_url = models.CharField(max_length=500, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.notification_type}] {self.title} → {self.recipient.username}"

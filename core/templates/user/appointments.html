@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}My Appointments — CSWDO{% endblock %}
+{% block page_title %}My Appointments{% endblock %}
+{% block breadcrumb %}Home / Appointments{% endblock %}
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- Upcoming Appointment Banner -->
+    {% if upcoming %}
+    <div class="card mb-4" style="border-left:4px solid var(--primary);background:linear-gradient(135deg,rgba(37,99,235,0.05),rgba(16,185,129,0.05))">
+        <div class="card-body px-4 py-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <div class="small text-primary fw-semibold mb-1"><i class="fi fi-rr-calendar me-1"></i> NEXT APPOINTMENT</div>
+                    <h4 class="fw-bold mb-1">{{ upcoming.program.name }}</h4>
+                    <p class="mb-0 text-muted">
+                        <i class="fi fi-rr-calendar me-1"></i> {{ upcoming.schedule_date|date:"F d, Y" }}
+                        &nbsp;•&nbsp; <i class="fi fi-rr-clock me-1"></i> {{ upcoming.get_time_slot_display }}
+                        &nbsp;•&nbsp; <i class="fi fi-rr-marker me-1"></i> {{ upcoming.claim_location }}
+                    </p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'user_appointment_detail' upcoming.pk %}" class="btn btn-primary btn-sm" id="view-upcoming-btn">
+                        <i class="fi fi-rr-eye me-1"></i> View Details
+                    </a>
+                    <a href="{% url 'print_appointment_slip' upcoming.pk %}" class="btn btn-outline btn-sm" target="_blank" id="print-upcoming-btn">
+                        <i class="fi fi-rr-print me-1"></i> Print Slip
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- All Appointments -->
+    <div class="card">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                <i class="fi fi-rr-calendar-lines text-primary"></i> All My Appointments
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if schedules %}
+            <div class="table-responsive">
+                <table class="table mb-0" id="user-appointments-table">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Program</th>
+                            <th>Date / Time</th>
+                            <th>Location</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in schedules %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-semibold">{{ s.program.name }}</div>
+                                {% if s.reschedule_requested %}<span class="badge bg-warning text-dark" style="font-size:.65rem">Reschedule Requested</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if s.schedule_date %}
+                                <div class="fw-medium">{{ s.schedule_date|date:"M d, Y" }}</div>
+                                <div class="small text-muted">{{ s.get_time_slot_display|default:"—" }}</div>
+                                {% else %}<span class="text-muted small">Not yet scheduled</span>{% endif %}
+                            </td>
+                            <td class="small text-muted">{{ s.claim_location|truncatewords:5 }}</td>
+                            <td class="text-center">
+                                {% if s.status == 'completed' %}<span class="badge bg-success text-white">Completed</span>
+                                {% elif s.status == 'scheduled' %}<span class="badge bg-primary text-white">Scheduled</span>
+                                {% elif s.status == 'missed' %}<span class="badge bg-danger text-white">Missed</span>
+                                {% elif s.status == 'cancelled' %}<span class="badge bg-secondary text-white">Cancelled</span>
+                                {% elif s.status == 'claimed' %}<span class="badge bg-info text-white">Claimed</span>
+                                {% else %}<span class="badge bg-warning text-dark">{{ s.get_status_display }}</span>{% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <a href="{% url 'user_appointment_detail' s.pk %}" class="btn btn-sm btn-outline" id="view-appt-{{ s.pk }}" title="View">
+                                        <i class="fi fi-rr-eye"></i>
+                                    </a>
+                                    {% if s.schedule_date %}
+                                    <a href="{% url 'print_appointment_slip' s.pk %}" class="btn btn-sm btn-outline" target="_blank" id="print-appt-{{ s.pk }}" title="Print Slip">
+                                        <i class="fi fi-rr-print"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div style="font-size:3rem;color:#e2e8f0;margin-bottom:1rem"><i class="fi fi-rr-calendar"></i></div>
+                <h5 class="fw-bold mb-2">No appointments yet</h5>
+                <p class="text-muted">Your appointment will appear here once your request is approved and scheduled.</p>
+                <a href="{% url 'user_dashboard' %}" class="btn btn-primary btn-sm" id="back-dashboard-btn">Back to Dashboard</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

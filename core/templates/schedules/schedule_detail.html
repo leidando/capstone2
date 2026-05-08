@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Schedule #{{ sched.pk }} — CSWDO{% endblock %}
+{% block page_title %}Appointment Detail{% endblock %}
+{% block breadcrumb %}Schedules / #{{ sched.pk }}{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="row g-4">
+
+        <!-- Left: Main Detail -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="card-title d-flex align-items-center gap-2 mb-1">
+                            <i class="fi fi-rr-calendar text-primary"></i>
+                            Schedule #{{ sched.pk }}
+                        </h5>
+                        <p class="small text-muted mb-0">{{ sched.program.name }}</p>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% if sched.status not in 'completed,rejected' %}
+                        <a href="{% url 'schedule_edit' sched.pk %}" class="btn btn-outline btn-sm" id="edit-btn">
+                            <i class="fi fi-rr-edit me-1"></i> Edit
+                        </a>
+                        {% endif %}
+                        {% if is_admin %}
+                        <a href="{% url 'beneficiary_service_history' sched.beneficiary.pk %}" class="btn btn-outline btn-sm" id="history-btn">
+                            <i class="fi fi-rr-time-past me-1"></i> History
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <!-- Status Badge -->
+                    <div class="mb-4">
+                        {% if sched.status == 'completed' %}<span class="badge bg-success px-3 py-2 fs-6">✓ Completed</span>
+                        {% elif sched.status == 'claimed' %}<span class="badge bg-info px-3 py-2 fs-6">Claimed</span>
+                        {% elif sched.status == 'scheduled' %}<span class="badge bg-primary px-3 py-2 fs-6">Scheduled</span>
+                        {% elif sched.status == 'missed' %}<span class="badge bg-danger px-3 py-2 fs-6">Missed</span>
+                        {% elif sched.status == 'cancelled' %}<span class="badge bg-secondary px-3 py-2 fs-6">Cancelled</span>
+                        {% elif sched.status == 'rejected' %}<span class="badge bg-danger px-3 py-2 fs-6">Rejected</span>
+                        {% elif sched.status == 'approved' %}<span class="badge bg-success px-3 py-2 fs-6">Approved</span>
+                        {% else %}<span class="badge bg-warning text-dark px-3 py-2 fs-6">{{ sched.get_status_display }}</span>{% endif %}
+                        {% if sched.reschedule_requested %}
+                        <span class="badge bg-warning text-dark ms-2">Reschedule Requested</span>
+                        {% endif %}
+                        {% if sched.reschedule_count > 0 %}
+                        <span class="badge bg-secondary ms-1">Rescheduled {{ sched.reschedule_count }}×</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="sched-info-block">
+                                <span class="sched-info-label"><i class="fi fi-rr-calendar me-1"></i> Schedule Date</span>
+                                <span class="sched-info-value">{{ sched.schedule_date|date:"F d, Y"|default:"Not Set" }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="sched-info-block">
+                                <span class="sched-info-label"><i class="fi fi-rr-clock me-1"></i> Time Slot</span>
+                                <span class="sched-info-value">{{ sched.get_time_slot_display|default:"Not Set" }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="sched-info-block">
+                                <span class="sched-info-label"><i class="fi fi-rr-marker me-1"></i> Claim Location</span>
+                                <span class="sched-info-value">{{ sched.claim_location }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="sched-info-block">
+                                <span class="sched-info-label"><i class="fi fi-rr-id-badge me-1"></i> Assigned Staff</span>
+                                <span class="sched-info-value">{{ sched.assigned_staff.get_full_name|default:"Unassigned" }}</span>
+                            </div>
+                        </div>
+                        {% if sched.remarks %}
+                        <div class="col-12">
+                            <div class="sched-info-block">
+                                <span class="sched-info-label"><i class="fi fi-rr-comment me-1"></i> Remarks</span>
+                                <span class="sched-info-value">{{ sched.remarks }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if sched.admin_notes and is_admin %}
+                        <div class="col-12">
+                            <div class="sched-info-block" style="border-left:3px solid var(--warning);padding-left:12px">
+                                <span class="sched-info-label text-warning"><i class="fi fi-rr-lock me-1"></i> Admin Notes (Internal)</span>
+                                <span class="sched-info-value">{{ sched.admin_notes }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if sched.reschedule_requested and sched.reschedule_reason %}
+                        <div class="col-12">
+                            <div class="alert alert-warning mb-0">
+                                <strong><i class="fi fi-rr-refresh me-1"></i> Reschedule Requested</strong>
+                                <p class="mb-0 small mt-1">{{ sched.reschedule_reason }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update Status -->
+            {% if sched.status not in 'completed,rejected,cancelled' %}
+            <div class="card">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="card-title mb-0"><i class="fi fi-rr-refresh text-info"></i> Update Status</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <form method="POST" action="{% url 'schedule_update_status' sched.pk %}" id="status-update-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="redirect" value="schedule_detail">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">New Status</label>
+                                <select name="status" class="form-select" id="status-select">
+                                    {% for val, label in sched.STATUS_CHOICES %}
+                                    <option value="{{ val }}" {% if sched.status == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4" id="amount-field" style="display:none">
+                                <label class="form-label small fw-semibold">Amount Value (PHP)</label>
+                                <input type="number" name="amount_value" class="form-control" step="0.01" min="0" value="0" id="amount-input">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Remarks / Notes</label>
+                                <textarea name="remarks" class="form-control" rows="2" placeholder="Optional notes for this status update..." id="status-remarks"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary" id="update-status-btn">
+                                    <i class="fi fi-rr-check me-2"></i> Update Status
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Service History Record -->
+            {% if history_record %}
+            <div class="card mt-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="card-title mb-0"><i class="fi fi-rr-time-past text-success"></i> Service History Record</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <small class="text-muted d-block">Claim Date</small>
+                            <strong>{{ history_record.claim_date|date:"M d, Y"|default:"—" }}</strong>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted d-block">Amount</small>
+                            <strong>₱{{ history_record.amount_value|floatformat:2 }}</strong>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted d-block">Staff</small>
+                            <strong>{{ history_record.assigned_staff.get_full_name|default:"—" }}</strong>
+                        </div>
+                        {% if history_record.remarks %}
+                        <div class="col-12 mt-2">
+                            <small class="text-muted d-block">Remarks</small>
+                            <span>{{ history_record.remarks }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right: Beneficiary Info -->
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="card-title mb-0"><i class="fi fi-rr-user text-primary"></i> Beneficiary</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <h6 class="fw-bold">{{ sched.beneficiary.full_name }}</h6>
+                    <p class="small text-muted mb-2">
+                        <i class="fi fi-rr-marker me-1"></i> {{ sched.beneficiary.barangay.name|default:"—" }}<br>
+                        <i class="fi fi-rr-venus-mars me-1"></i> {{ sched.beneficiary.gender }}, {{ sched.beneficiary.age }} yrs<br>
+                        <i class="fi fi-rr-shield me-1"></i> Vulnerability: <strong>{{ sched.beneficiary.vulnerability_level|title }}</strong>
+                    </p>
+                    {% if is_admin %}
+                    <a href="{% url 'beneficiary_service_history' sched.beneficiary.pk %}" class="btn btn-outline btn-sm w-100" id="view-bene-history">
+                        <i class="fi fi-rr-time-past me-1"></i> Full History
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="card-title mb-0"><i class="fi fi-rr-info text-muted"></i> Metadata</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <table class="table table-sm mb-0">
+                        <tr><td class="text-muted small">Created By</td><td class="small">{{ sched.created_by.get_full_name|default:"System" }}</td></tr>
+                        <tr><td class="text-muted small">Created</td><td class="small">{{ sched.created_at|date:"M d, Y" }}</td></tr>
+                        <tr><td class="text-muted small">Updated</td><td class="small">{{ sched.updated_at|date:"M d, Y g:i A" }}</td></tr>
+                        <tr><td class="text-muted small">Max/Slot</td><td class="small">{{ sched.max_per_slot }}</td></tr>
+                        {% if sched.assistance_request %}
+                        <tr>
+                            <td class="text-muted small">Request</td>
+                            <td class="small"><a href="{% url 'request_detail' sched.assistance_request.pk %}" id="view-request-link">#{{ sched.assistance_request.pk }}</a></td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const statusSel = document.getElementById('status-select');
+const amtField = document.getElementById('amount-field');
+if (statusSel) {
+    statusSel.addEventListener('change', function() {
+        amtField.style.display = this.value === 'completed' ? 'block' : 'none';
+    });
+}
+</script>
+{% endblock %}

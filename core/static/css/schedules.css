@@ -1,0 +1,345 @@
+/* =====================================================
+   SCHEDULES & APPOINTMENTS — CSWDO System
+   Covers: schedule cards, timeline, info blocks,
+           notification bell, appointment slip print
+   ===================================================== */
+
+/* ─── Schedule Info Blocks ─────────────────────────── */
+.sched-info-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 16px;
+    background: var(--bg, #f8fafc);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 8px;
+}
+
+.sched-info-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #94a3b8);
+}
+
+.sched-info-value {
+    font-size: 0.95rem;
+    color: var(--text, #0f172a);
+    line-height: 1.5;
+}
+
+/* ─── Status Badges (Schedule) ─────────────────────── */
+.badge-scheduled  { background: var(--primary); }
+.badge-completed  { background: var(--success); }
+.badge-missed     { background: var(--danger); }
+.badge-cancelled  { background: var(--text-muted); }
+.badge-claimed    { background: #06b6d4; }
+.badge-approved   { background: var(--success); }
+.badge-rejected   { background: var(--danger); }
+.badge-pending    { background: var(--warning); color: #1f2937; }
+
+/* ─── Availability Progress Bars ───────────────────── */
+.slot-availability {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* ─── Timeline Component ────────────────────────────── */
+.timeline {
+    position: relative;
+    padding-left: 32px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--border, #e2e8f0);
+    border-radius: 2px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: -25px;
+    top: 14px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--surface, #fff);
+    box-shadow: 0 0 0 2px var(--border);
+    z-index: 1;
+}
+
+.timeline-dot.bg-success { background: var(--success, #10b981); box-shadow: 0 0 0 2px rgba(16,185,129,.2); }
+.timeline-dot.bg-primary { background: var(--primary, #2563eb); box-shadow: 0 0 0 2px rgba(37,99,235,.2); }
+.timeline-dot.bg-danger  { background: var(--danger, #ef4444);  box-shadow: 0 0 0 2px rgba(239,68,68,.2); }
+.timeline-dot.bg-warning { background: var(--warning, #f59e0b); box-shadow: 0 0 0 2px rgba(245,158,11,.2); }
+.timeline-dot.bg-secondary { background: #94a3b8; box-shadow: 0 0 0 2px rgba(148,163,184,.2); }
+
+.timeline-content {
+    transition: box-shadow .2s ease, transform .2s ease;
+}
+
+.timeline-content:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+    transform: translateX(2px);
+}
+
+/* ─── Notification Bell ─────────────────────────────── */
+.notif-wrapper {
+    position: relative;
+}
+
+.notif-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary, #64748b);
+    font-size: 1.25rem;
+    padding: 6px 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: background .15s, color .15s;
+}
+
+.notif-btn:hover {
+    background: var(--bg, #f8fafc);
+    color: var(--primary, #2563eb);
+}
+
+.notif-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: var(--danger, #ef4444);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.notif-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 360px;
+    max-height: 480px;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.12), 0 4px 16px rgba(0,0,0,.06);
+    z-index: 1050;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.notif-dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    font-size: 0.95rem;
+    color: var(--text, #0f172a);
+    flex-shrink: 0;
+}
+
+.notif-mark-all-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.78rem;
+    color: var(--primary, #2563eb);
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background .15s;
+}
+
+.notif-mark-all-btn:hover {
+    background: rgba(37,99,235,.08);
+}
+
+.notif-list {
+    overflow-y: auto;
+    flex: 1;
+    max-height: 360px;
+}
+
+.notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    transition: background .15s;
+    position: relative;
+}
+
+.notif-item:last-child {
+    border-bottom: none;
+}
+
+.notif-item:hover {
+    background: var(--bg, #f8fafc);
+}
+
+.notif-item.unread {
+    background: rgba(37,99,235,.03);
+}
+
+.notif-item.unread::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--primary, #2563eb);
+    border-radius: 0 2px 2px 0;
+}
+
+.notif-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.95rem;
+}
+
+.notif-blue   { background: rgba(37,99,235,.1);   color: #2563eb; }
+.notif-green  { background: rgba(16,185,129,.1);  color: #10b981; }
+.notif-red    { background: rgba(239,68,68,.1);   color: #ef4444; }
+.notif-yellow { background: rgba(245,158,11,.1);  color: #f59e0b; }
+
+.notif-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.notif-title {
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: var(--text, #0f172a);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.notif-msg {
+    font-size: 0.77rem;
+    color: var(--text-secondary, #64748b);
+    line-height: 1.4;
+    margin-top: 2px;
+}
+
+.notif-time {
+    font-size: 0.7rem;
+    color: var(--text-muted, #94a3b8);
+    margin-top: 4px;
+}
+
+.notif-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.85rem;
+    gap: 8px;
+    text-align: center;
+}
+
+.notif-empty i {
+    font-size: 2rem;
+    opacity: .4;
+}
+
+.notif-dropdown-footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border, #e2e8f0);
+    text-align: center;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    color: var(--text-muted, #94a3b8);
+}
+
+/* ─── Appointment Status Indicators ────────────────── */
+.appt-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.appt-status-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.appt-status-text h6 {
+    margin-bottom: 4px;
+    font-weight: 700;
+}
+
+.appt-status-text p {
+    margin-bottom: 0;
+    font-size: 0.85rem;
+}
+
+/* ─── Print Slip Specific ───────────────────────────── */
+@media print {
+    .sidebar, .topbar, .no-print,
+    .btn, .breadcrumb { display: none !important; }
+    .content { padding: 0 !important; }
+    .main { margin-left: 0 !important; }
+    .card { border: 1px solid #000 !important; box-shadow: none !important; }
+}
+
+/* ─── Responsive ────────────────────────────────────── */
+@media (max-width: 575.98px) {
+    .notif-dropdown {
+        width: calc(100vw - 32px);
+        right: -60px;
+    }
+
+    .timeline {
+        padding-left: 24px;
+    }
+
+    .timeline-dot {
+        left: -19px;
+    }
+}

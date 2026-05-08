@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Schedule Appointment — CSWDO{% endblock %}
+{% block page_title %}Create Appointment Schedule{% endblock %}
+{% block breadcrumb %}Schedules / Create{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="row g-4">
+
+        <!-- Form Column -->
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-calendar-plus text-primary"></i> Assign Claiming Schedule
+                    </h5>
+                    <p class="small text-muted mt-1 mb-0">Set the appointment date, time, and location for this approved request.</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" id="schedule-create-form">
+                        {% csrf_token %}
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Please fix the errors below:</strong>
+                            {% for field in form %}{% for error in field.errors %}<div>{{ field.label }}: {{ error }}</div>{% endfor %}{% endfor %}
+                            {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="sched-date">Schedule Date</label>
+                                {{ form.schedule_date }}
+                                <div class="form-text">Select the claiming date for this appointment.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="sched-slot">Time Slot</label>
+                                {{ form.time_slot }}
+                                <div class="form-text slot-availability" id="slot-info">Select a date first to check availability.</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="sched-location">Claim Location</label>
+                                {{ form.claim_location }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="sched-staff">Assigned Staff</label>
+                                {{ form.assigned_staff }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="sched-max">Max Per Slot</label>
+                                {{ form.max_per_slot }}
+                                <div class="form-text">Maximum beneficiaries allowed in this time slot.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="sched-status">Initial Status</label>
+                                {{ form.status }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="sched-remarks">Remarks (visible to beneficiary)</label>
+                                {{ form.remarks }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="sched-admin-notes">Admin Notes (internal)</label>
+                                {{ form.admin_notes }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3 mt-4">
+                            <button type="submit" class="btn btn-primary px-5" id="save-schedule-btn">
+                                <i class="fi fi-rr-check me-2"></i> Create Schedule
+                            </button>
+                            <a href="{% url 'request_detail' assistance_req.pk %}" class="btn btn-outline" id="cancel-schedule-btn">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Request Summary -->
+        <div class="col-lg-5">
+            <div class="card mb-3">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <i class="fi fi-rr-user text-info"></i> Request Summary
+                    </h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <table class="table table-sm mb-0">
+                        <tr>
+                            <td class="text-muted small" style="width:40%">Beneficiary</td>
+                            <td class="fw-semibold">{{ assistance_req.beneficiary.full_name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted small">Program</td>
+                            <td>{{ assistance_req.program.name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted small">Barangay</td>
+                            <td>{{ assistance_req.barangay.name|default:"—" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted small">Request #</td>
+                            <td>#{{ assistance_req.pk }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted small">Submitted</td>
+                            <td>{{ assistance_req.date_submitted|date:"M d, Y" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted small">Status</td>
+                            <td><span class="badge bg-success text-white">{{ assistance_req.get_status_display }}</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Slot Availability Display -->
+            <div class="card" id="slot-availability-card" style="display:none!important">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="card-title mb-0"><i class="fi fi-rr-clock text-warning"></i> Slot Availability</h6>
+                </div>
+                <div class="card-body px-4 pb-4" id="slot-availability-body">
+                    <p class="text-muted small">Select a date to see availability.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const dateInput = document.getElementById('sched-date');
+const slotSelect = document.getElementById('sched-slot');
+const slotCard = document.getElementById('slot-availability-card');
+const slotBody = document.getElementById('slot-availability-body');
+const slotInfo = document.getElementById('slot-info');
+
+dateInput.addEventListener('change', function() {
+    const date = this.value;
+    if (!date) return;
+    fetch(`/api/schedule/slots/?date=${date}&max_per_slot=10`)
+        .then(r => r.json())
+        .then(data => {
+            slotCard.style.setProperty('display', 'block', 'important');
+            let html = '<div class="row g-2">';
+            data.slots.forEach(s => {
+                const pct = Math.round((s.count / s.max) * 100);
+                const color = s.available ? (pct >= 80 ? 'warning' : 'success') : 'danger';
+                html += `<div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="fw-medium">${s.label}</small>
+                        <small class="text-muted">${s.count}/${s.max}</small>
+                    </div>
+                    <div class="progress" style="height:6px">
+                        <div class="progress-bar bg-${color}" style="width:${pct}%"></div>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+            slotBody.innerHTML = html;
+
+            // Update slot select options with availability info
+            Array.from(slotSelect.options).forEach(opt => {
+                if (!opt.value) return;
+                const slot = data.slots.find(s => s.value === opt.value);
+                if (slot) {
+                    opt.disabled = !slot.available;
+                    opt.text = `${slot.label} — ${slot.count}/${slot.max}${slot.available ? '' : ' (FULL)'}`;
+                }
+            });
+            slotInfo.innerHTML = `<span class="text-success"><i class="fi fi-rr-check me-1"></i>${data.slots.filter(s=>s.available).length} slots available for ${date}</span>`;
+        });
+});
+</script>
+{% endblock %}

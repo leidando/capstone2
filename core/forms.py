@@ -1,6 +1,9 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Barangay, Program, Beneficiary, AssistanceRequest, UserProfile
+from .models import (
+    Barangay, Program, Beneficiary, AssistanceRequest, UserProfile,
+    ScheduledTransaction,
+)
 
 
 class RegistrationForm(forms.Form):
@@ -165,3 +168,75 @@ class StaffCreationForm(forms.Form):
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError('Email already registered.')
         return email
+
+
+class ScheduledTransactionForm(forms.ModelForm):
+    """Admin/Staff form to create or edit a scheduled transaction."""
+
+    schedule_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'id': 'sched-date',
+        }),
+        required=False,
+    )
+
+    class Meta:
+        model = ScheduledTransaction
+        fields = [
+            'schedule_date', 'time_slot', 'claim_location',
+            'assigned_staff', 'max_per_slot', 'status', 'remarks', 'admin_notes',
+        ]
+        widgets = {
+            'time_slot': forms.Select(attrs={'class': 'form-select', 'id': 'sched-slot'}),
+            'claim_location': forms.TextInput(attrs={
+                'class': 'form-control', 'id': 'sched-location',
+                'placeholder': 'e.g. CSWDO Office, Tayabas City',
+            }),
+            'assigned_staff': forms.Select(attrs={'class': 'form-select', 'id': 'sched-staff'}),
+            'max_per_slot': forms.NumberInput(attrs={
+                'class': 'form-control', 'id': 'sched-max', 'min': 1, 'max': 50,
+            }),
+            'status': forms.Select(attrs={'class': 'form-select', 'id': 'sched-status'}),
+            'remarks': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 2, 'id': 'sched-remarks',
+                'placeholder': 'Optional remarks for the beneficiary',
+            }),
+            'admin_notes': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 2, 'id': 'sched-admin-notes',
+                'placeholder': 'Internal admin notes (not visible to beneficiary)',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django.contrib.auth.models import User as AuthUser
+        self.fields['assigned_staff'].queryset = AuthUser.objects.filter(
+            profile__role='staff', staff_profile__is_active=True
+        ).select_related('profile')
+        self.fields['assigned_staff'].required = False
+        self.fields['assigned_staff'].empty_label = '— Unassigned —'
+
+
+class RescheduleRequestForm(forms.Form):
+    """Beneficiary form to request a reschedule."""
+    reason = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'id': 'reschedule-reason',
+            'placeholder': 'Please explain why you need to reschedule...',
+        }),
+        label='Reason for Reschedule',
+        max_length=1000,
+    )
+    preferred_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'id': 'reschedule-preferred-date',
+        }),
+        required=False,
+        label='Preferred Date (optional)',
+    )

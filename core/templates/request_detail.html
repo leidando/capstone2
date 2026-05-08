@@ -210,8 +210,19 @@
                 {% endif %}
 
                 {% if req.status == 'approved' %}
-                <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2 px-3 fw-bold rounded-pill mx-auto ms-sm-0 w-100 w-sm-auto">
-                    <i class="fi fi-rr-check"></i> This application has been approved
+                <div class="alert alert-success d-flex align-items-center justify-content-between gap-3 mb-0 py-2 px-3 rounded w-100">
+                    <div class="d-flex align-items-center gap-2 fw-bold">
+                        <i class="fi fi-rr-check"></i> This application has been approved
+                    </div>
+                    {% if req.schedule %}
+                    <a href="{% url 'schedule_detail' req.schedule.pk %}" class="btn btn-sm btn-light border" id="view-schedule-btn">
+                        <i class="fi fi-rr-calendar me-1"></i> View Schedule
+                    </a>
+                    {% else %}
+                    <a href="{% url 'schedule_create' req.pk %}" class="btn btn-sm btn-primary" id="create-schedule-btn">
+                        <i class="fi fi-rr-calendar-plus me-1"></i> Create Schedule
+                    </a>
+                    {% endif %}
                 </div>
                 {% endif %}
 
